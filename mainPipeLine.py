@@ -299,7 +299,7 @@ p2=Polygon([(0,1),(1,0),(1,1)])
 p3=p1.intersection(p2)
 print(p3) # result: POLYGON ((0.5 0.5, 1 1, 1 0, 0.5 0.5))
 print(p3.area) # result: 0.25
-
+ 
 # Test on a external image
 
 externalImagePath = "Data/val/glass97.jpg" # glass97 trash75
