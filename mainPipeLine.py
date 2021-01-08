@@ -1,7 +1,7 @@
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
 
-python3
+/Users/jorgeassis/miniconda3/bin/python3
 
 ## Erase memory objects
 
@@ -35,58 +35,34 @@ from mrcnn import utils
 import mrcnn.model as modellib
 from mrcnn import visualize
 from mrcnn.model import log
+from keras.preprocessing import image
+
+os.getcwd()
 
 ## Root directory of the project
-rootDirectory = os.path.abspath("/Volumes/Jellyfish/GDrive/Manuscripts/Convolutional Neural Networks for kelp canopy identification/Git/maskRCNN V2")
+rootDirectory = os.path.abspath("/Volumes/Jellyfish/GDrive/Manuscripts/Convolutional Neural Networks for kelp canopy identification/Git/maskRCNN")
 
 ## Import Mask RCNN
 sys.path.append(rootDirectory)  # To find local version of the library
 
 ## Directory to save logs and trained model
-modelDirectory = os.path.join(rootDirectory, "logs")
+modelDirectory = os.path.join("../../", "logs")
 
 ## Dataset Directory
 
 datasetDirectory = os.path.join(rootDirectory, "Data/")
 
 ## Local path to trained weights file
-weightsFilePath = os.path.join(rootDirectory, "mask_rcnn_coco.h5")
-
-## Download COCO trained weights from Releases if needed
-# utils.download_trained_weights(weightsFilePath)
-
-class mainConfigOld(Config):
-    """Configuration for training on the toy shapes dataset.
-    Derives from the base Config class and overrides values specific
-    to the toy shapes dataset.
-    """
-    # Give the configuration a recognizable name
-    NAME = "shapes"
-    # Train on 1 GPU and 8 images per GPU. We can put multiple images on each
-    # GPU because the images are small. Batch size is 8 (GPUs * images/GPU).
-    GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
-    # Number of classes (including background)
-    NUM_CLASSES = 1 + 4  # background + shapes
-    # Use small images for faster training. Set the limits of the small side
-    # the large side, and that determines the image shape.
-    IMAGE_MIN_DIM = 128
-    IMAGE_MAX_DIM = 128
-    # Use smaller anchors because our image and objects are small
-    RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)  # anchor side in pixels
-    # Reduce training ROIs per image because the images are small and have
-    # few objects. Aim to allow ROI sampling to pick 33% positive ROIs.
-    TRAIN_ROIS_PER_IMAGE = 32
-    # Use a small epoch since the data is simple
-    STEPS_PER_EPOCH = 100
-    # use small validation steps since the epoch is small
-    VALIDATION_STEPS = 5
-    N_EPOCHS = 1 # ??
+weightsFilePath = os.path.join("../../", "mask_rcnn_coco.h5")
 
 class mainConfig(Config):
     """Configuration for training on the toy  dataset.
     Derives from the base Config class and overrides some values.
     """
+    # Use small images for faster training. Set the limits of the small side
+    # the large side, and that determines the image shape.
+    #IMAGE_MIN_DIM = 128
+    #IMAGE_MAX_DIM = 128
     # Give the configuration a recognizable name
     NAME = "trash"
     # We use a GPU with 12GB memory, which can fit two images.
@@ -216,16 +192,19 @@ dataset_val.prepare()
 
 # Load and display random samples
 
-image_ids = np.random.choice(dataset_train.image_ids, 4)
-for image_id in image_ids:
-    image = dataset_train.load_image(image_id)
-    mask, class_ids = dataset_train.load_mask(image_id)
-    visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)
+# image_ids = np.random.choice(dataset_train.image_ids, 4)
+# for image_id in image_ids:
+#     image = dataset_train.load_image(image_id)
+#     mask, class_ids = dataset_train.load_mask(image_id)
+#     visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)
 
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
 
 ## Train model
+
+## Download COCO trained weights from Releases if needed
+# utils.download_trained_weights(weightsFilePath)
 
 # Train in two stages:
 # 1. Only the heads. Here we're freezing all the backbone layers and training only the randomly initialized layers (i.e. the ones that we didn't use pre-trained weights from MS COCO). To train only the head layers, pass `layers='heads'` to the `train()` function.
@@ -275,7 +254,7 @@ model = modellib.MaskRCNN(mode="inference",
 
 # weightsFilePathFinal = weightsFilePath
 # weightsFilePathFinal = model.find_last() # Check https://github.com/matterport/Mask_RCNN/issues/885
-# weightsFilePathFinal = "/Volumes/Jellyfish/GDrive/Manuscripts/Convolutional Neural Networks for kelp canopy identification/Git/maskRCNN V2/logs/trash20210108T1150/mask_rcnn_trash_0000.h5"
+# weightsFilePathFinal = "../../logs/trash20210108T1444/mask_rcnn_trash_0000.h5"
 
 # Load trained weights
 print("Loading weights from ", weightsFilePathFinal)
@@ -299,11 +278,11 @@ visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id, datas
 results = model.detect([original_image], verbose=1)
 
 r = results[0]
+print(r.keys())
 visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'], 
                             dataset_val.class_names, r['scores'], figsize=(8, 8))
 
-externalImagePath = "/Volumes/Jellyfish/GDrive/Manuscripts/Convolutional Neural Networks for kelp canopy identification/Git/maskRCNN V2/Data/val/trash75.jpg"
-externalImage = skimage.io.imread(externalImagePath)
+externalImagePath = "Data/val/trash75.jpg"
 
 # display image
 
@@ -311,11 +290,14 @@ img = mpimg.imread(externalImagePath)
 imgplot = plt.imshow(img)
 plt.show()
 
-img = load_img(externalImagePath)
-img = img_to_array(img)
+img = image.load_img(externalImagePath)
+img = image.img_to_array(img)
 
-model.detect([img], verbose=1)
+results = model.detect([img], verbose=1)
 
+r = results[0]
+visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'], 
+                            dataset_val.class_names, r['scores'], figsize=(8, 8))
 
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
@@ -325,7 +307,7 @@ model.detect([img], verbose=1)
 # Compute VOC-Style mAP @ IoU=0.5
 # Running on 10 images. Increase for better accuracy.
 
-visualize.display_weight_stats(model)
+# visualize.display_weight_stats(model)
 
 image_ids = np.random.choice(dataset_val.image_ids, 10)
 APs = []
@@ -345,3 +327,10 @@ for image_id in image_ids:
     APs.append(AP)
 
 print("mAP: ", np.mean(APs))
+
+
+re_encoded_to_rle_list = []
+for i in np.arange(np.array(r['masks']).shape[-1]):
+    boolean_mask = r['masks'][:,:,i]
+    re_encoded_to_rle = dataset.rle_encode(boolean_mask)
+    re_encoded_to_rle_list.append(re_encoded_to_rle)
