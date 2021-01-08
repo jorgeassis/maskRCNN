@@ -24,7 +24,7 @@ import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-
+from imantics import Polygons, Mask
 import argparse
 import json
 import skimage.draw
@@ -282,7 +282,27 @@ print(r.keys())
 visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'], 
                             dataset_val.class_names, r['scores'], figsize=(8, 8))
 
-externalImagePath = "Data/val/trash75.jpg"
+# Actual initial mask [Get this done to compare overlay areas]
+
+polygonsInit = Mask(gt_mask).polygons()
+polygonsInit = polygonsInit.points[:][0]
+
+xs, ys = zip(*polygonsInit)
+
+plt.figure()
+plt.plot(xs,ys) 
+plt.show()
+
+from shapely.geometry import Polygon
+p1=Polygon([(0,0),(1,1),(1,0)])
+p2=Polygon([(0,1),(1,0),(1,1)])
+p3=p1.intersection(p2)
+print(p3) # result: POLYGON ((0.5 0.5, 1 1, 1 0, 0.5 0.5))
+print(p3.area) # result: 0.25
+
+# Test on a external image
+
+externalImagePath = "Data/val/glass97.jpg" # glass97 trash75
 
 # display image
 
@@ -294,10 +314,22 @@ img = image.load_img(externalImagePath)
 img = image.img_to_array(img)
 
 results = model.detect([img], verbose=1)
-
 r = results[0]
+
 visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'], 
                             dataset_val.class_names, r['scores'], figsize=(8, 8))
+
+# xmin, ymin, xmax and ymax
+r['rois']
+
+polygons = Mask(r['masks']).polygons()
+polygons = polygons.points[:][0]
+
+xs, ys = zip(*polygons)
+
+plt.figure()
+plt.plot(xs,ys) 
+plt.show()
 
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
