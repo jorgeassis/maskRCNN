@@ -1,1 +1,1 @@
-# maskRCNN
+# Mask RCNN implementation on a custom dataset.

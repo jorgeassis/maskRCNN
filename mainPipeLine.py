@@ -30,6 +30,12 @@ import json
 import skimage.draw
 import skimage.viewer
 
+import math
+from shapely.geometry import Polygon
+from shapely.ops import cascaded_union
+from shapely import geometry
+import geopandas as gpd
+
 from mrcnn.config import Config
 from mrcnn import utils
 import mrcnn.model as modellib
@@ -64,13 +70,13 @@ class mainConfig(Config):
     #IMAGE_MIN_DIM = 128
     #IMAGE_MAX_DIM = 128
     # Give the configuration a recognizable name
-    NAME = "trash"
+    NAME = "circle" # trash
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 4  # Background + shapes
+    NUM_CLASSES = 1 + 1  # Background + shapes (4)
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 100
     # Skip detections with < 90% confidence
@@ -89,15 +95,15 @@ config.display()
 
 class CustomDataset(utils.Dataset):
     def load_custom(self, dataset_dir, subset):
-        """Load a subset of the bottle dataset.
+        """Load a subset of the dataset.
         dataset_dir: Root directory of the dataset.
         subset: Subset to load: train or val
         """
         # Add classes. We have only one class to add.
-        self.add_class("object", 1, "bottle")
-        self.add_class("object", 2, "glass")
-        self.add_class("object", 3, "paper")
-        self.add_class("object", 4, "trash")
+        self.add_class("object", 1, "circle") # check name in via_region_data.json
+        # self.add_class("object", 2, "glass")
+        # self.add_class("object", 3, "paper")
+        # self.add_class("object", 4, "trash")
         # Train or validation dataset?
         assert subset in ["train", "val"]
         dataset_dir = os.path.join(dataset_dir, subset)
@@ -117,7 +123,8 @@ class CustomDataset(utils.Dataset):
             polygons = [r['shape_attributes'] for r in a['regions']] 
             objects = [s['region_attributes']['name'] for s in a['regions']]
             print("objects:",objects)
-            name_dict = {"bottle": 1,"glass": 2,"paper": 3,"trash": 4}
+            # name_dict = {"bottle": 1,"glass": 2,"paper": 3,"trash": 4}
+            name_dict = {"circle": 1}
             # key = tuple(name_dict)
             num_ids = [name_dict[a] for a in objects]
             # num_ids = [int(n['Event']) for n in objects]
@@ -254,15 +261,19 @@ model = modellib.MaskRCNN(mode="inference",
 
 # weightsFilePathFinal = weightsFilePath
 # weightsFilePathFinal = model.find_last() # Check https://github.com/matterport/Mask_RCNN/issues/885
-# weightsFilePathFinal = "../../logs/trash20210108T1444/mask_rcnn_trash_0000.h5"
+# weightsFilePathFinal = "../../logs/circle20210111T1142/mask_rcnn_circle_0000.h5"
 
 # Load trained weights
-print("Loading weights from ", weightsFilePathFinal)
+
 model.load_weights(weightsFilePathFinal, by_name=True)
 
-# Test on a random image
+## --------------------------
+## --------------------------
+# Test on a val image
 
 image_id = random.choice(dataset_val.image_ids)
+image_id = 0
+
 original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
     modellib.load_image_gt(dataset_val, inferenceConfig, 
                            image_id, use_mini_mask=False)
@@ -275,6 +286,8 @@ log("gt_mask", gt_mask)
 
 visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id, dataset_train.class_names, figsize=(8, 8))
 
+# Detect
+
 results = model.detect([original_image], verbose=1)
 
 r = results[0]
@@ -282,27 +295,82 @@ print(r.keys())
 visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'], 
                             dataset_val.class_names, r['scores'], figsize=(8, 8))
 
-# Actual initial mask [Get this done to compare overlay areas]
 
-polygonsInit = Mask(gt_mask).polygons()
-polygonsInit = polygonsInit.points[:][0]
+# Regions identified xmin, ymin, xmax and ymax
+r['rois']
 
-xs, ys = zip(*polygonsInit)
+# Number of identifyed features
+len(r['class_ids'])
 
-plt.figure()
-plt.plot(xs,ys) 
+# Scores of each feature
+r['scores']
+
+# Determine total area (fraction of image)
+
+imageArea = 1 # Change to actual image
+totalArea = []
+for i in range(r['masks'].shape[-1]):
+    mask = r['masks'][:, :, i]
+    positive_pixel_count = mask.sum() # assumes binary mask (True == 1)
+    h, w = mask.shape # assumes NHWC data format, adapt as needed
+    area = positive_pixel_count / (w*h)
+    totalArea.append(area)
+
+sum(totalArea)
+sum(totalArea) * imageArea
+
+totalGeometry = []
+for i in range(r['masks'].shape[-1]):
+    polygons = Mask(r['masks'][:, :, i]).polygons()
+    polygons = polygons.points[:][0]
+    polygonF = Polygon(polygons)
+    totalGeometry.append(polygonF)
+
+totalGeometryPredicted = cascaded_union(totalGeometry)
+
+boundaryP = gpd.GeoSeries(totalGeometryPredicted)
+boundaryP.plot(color = 'red')
 plt.show()
 
-from shapely.geometry import Polygon
-p1=Polygon([(0,0),(1,1),(1,0)])
-p2=Polygon([(0,1),(1,0),(1,1)])
-p3=p1.intersection(p2)
-print(p3) # result: POLYGON ((0.5 0.5, 1 1, 1 0, 0.5 0.5))
-print(p3.area) # result: 0.25
+# Actual observed mask
+
+totalGeometry = []
+for i in range(gt_mask.shape[-1]):
+    polygons = Mask(gt_mask[:, :, i]).polygons()
+    polygons = polygons.points[:][0]
+    polygonF = Polygon(polygons)
+    totalGeometry.append(polygonF)
+
+totalGeometryObserved = cascaded_union(totalGeometry)
+
+boundaryO = gpd.GeoSeries(totalGeometryObserved)
+boundaryO.plot(color = 'red')
+plt.show()
+
+
+totalGeometryaccuracyUnion = totalGeometryObserved.intersection(totalGeometryPredicted)
+totalGeometryaccuracyDiff = totalGeometryObserved.difference(totalGeometryPredicted)
+
+totalGeometryObserved.area
+totalGeometryPredicted.area
+totalGeometryaccuracyUnion.area
+totalGeometryaccuracyDiff.area
  
+# use descartes to create the matplotlib patches
+ax = plt.gca()
+ax.add_patch(descartes.PolygonPatch(totalGeometryaccuracyUnion, fc='GREEN', ec='GREEN', alpha=0.5))
+ax.add_patch(descartes.PolygonPatch(totalGeometryaccuracyDiff, fc='RED', ec='RED', alpha=0.5))
+
+# control display
+ax.set_xlim(0, 800); ax.set_ylim(0, 800)
+ax.set_aspect('equal')
+plt.show()
+
+## --------------------------
+## --------------------------
 # Test on a external image
 
-externalImagePath = "Data/val/glass97.jpg" # glass97 trash75
+externalImagePath = "Data/val/3.png" # Data/val/3.png # Data/0.png
 
 # display image
 
@@ -318,18 +386,6 @@ r = results[0]
 
 visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'], 
                             dataset_val.class_names, r['scores'], figsize=(8, 8))
-
-# xmin, ymin, xmax and ymax
-r['rois']
-
-polygons = Mask(r['masks']).polygons()
-polygons = polygons.points[:][0]
-
-xs, ys = zip(*polygons)
-
-plt.figure()
-plt.plot(xs,ys) 
-plt.show()
 
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
@@ -359,10 +415,3 @@ for image_id in image_ids:
     APs.append(AP)
 
 print("mAP: ", np.mean(APs))
-
-
-re_encoded_to_rle_list = []
-for i in np.arange(np.array(r['masks']).shape[-1]):
-    boolean_mask = r['masks'][:,:,i]
-    re_encoded_to_rle = dataset.rle_encode(boolean_mask)
-    re_encoded_to_rle_list.append(re_encoded_to_rle)

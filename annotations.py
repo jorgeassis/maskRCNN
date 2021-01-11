@@ -7,7 +7,6 @@ import os
 # https://www.robots.ox.ac.uk/~vgg/software/via/
 # https://www.robots.ox.ac.uk/~vgg/software/via/via.html
 
-
 annotationFile = '/Volumes/Jellyfish/GDrive/Manuscripts/Convolutional Neural Networks for kelp canopy identification/Git/maskRCNN/Data/train/via_region_data.json'
 annotations = json.load(open(annotationFile))
 annotations
