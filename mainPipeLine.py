@@ -42,6 +42,8 @@ import mrcnn.model as modellib
 from mrcnn import visualize
 from mrcnn.model import log
 from keras.preprocessing import image
+from keras.preprocessing.image import load_img
+from keras.preprocessing.image import img_to_array
 
 os.getcwd()
 
@@ -347,7 +349,6 @@ boundaryO = gpd.GeoSeries(totalGeometryObserved)
 boundaryO.plot(color = 'red')
 plt.show()
 
-
 totalGeometryaccuracyUnion = totalGeometryObserved.intersection(totalGeometryPredicted)
 totalGeometryaccuracyDiff = totalGeometryObserved.difference(totalGeometryPredicted)
 
@@ -370,7 +371,7 @@ plt.show()
 ## --------------------------
 # Test on a external image
 
-externalImagePath = "Data/val/3.png" # Data/val/3.png # Data/0.png
+externalImagePath = "Data/0 Bigger size.png" # Data/val/3.png # Data/0.png # Data/0 Bigger size.png
 
 # display image
 
@@ -378,14 +379,16 @@ img = mpimg.imread(externalImagePath)
 imgplot = plt.imshow(img)
 plt.show()
 
-img = image.load_img(externalImagePath)
-img = image.img_to_array(img)
+img = load_img(externalImagePath)
+img = img_to_array(img)
 
 results = model.detect([img], verbose=1)
 r = results[0]
 
 visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'], 
                             dataset_val.class_names, r['scores'], figsize=(8, 8))
+
+r['scores']
 
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
