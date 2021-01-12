@@ -102,8 +102,8 @@ class CustomDataset(utils.Dataset):
         subset: Subset to load: train or val
         """
         # Add classes. We have only one class to add.
-        self.add_class("object", 1, "circle") # check name in via_region_data.json
-        # self.add_class("object", 2, "glass")
+        self.add_class("object", 1, "kelp") # check name in via_region_data.json
+        self.add_class("object", 2, "clouds")
         # self.add_class("object", 3, "paper")
         # self.add_class("object", 4, "trash")
         # Train or validation dataset?
@@ -213,7 +213,7 @@ dataset_val.prepare()
 ## Train model
 
 ## Download COCO trained weights from Releases if needed
-# utils.download_trained_weights(weightsFilePath)
+utils.download_trained_weights(weightsFilePath)
 
 # Train in two stages:
 # 1. Only the heads. Here we're freezing all the backbone layers and training only the randomly initialized layers (i.e. the ones that we didn't use pre-trained weights from MS COCO). To train only the head layers, pass `layers='heads'` to the `train()` function.
@@ -224,6 +224,8 @@ model = modellib.MaskRCNN(mode="training", config=config, model_dir=modelDirecto
 model.load_weights(weightsFilePath, by_name=True, exclude=[
             "mrcnn_class_logits", "mrcnn_bbox_fc",
             "mrcnn_bbox", "mrcnn_mask"])
+
+config.LEARNING_RATE
 
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
