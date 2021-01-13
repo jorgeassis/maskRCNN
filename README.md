@@ -19,10 +19,15 @@ https://medium.com/analytics-vidhya/taming-the-hyper-parameters-of-mask-rcnn-374
 
 ### TODOs
 
-1. https://earthexplorer.usgs.gov
-	 Get scenes codes
-	 "Band Kelp canopy area and biomass from LANDSAT 5"
+1. Get to known Landsat scene codes
+     https://earthexplorer.usgs.gov
 
 2. Go to python and test downloading
 	 Search for additional scripts / approaches
+
+3. In python, get to know how to extract the proper band for "Kelp canopy area and biomass"
+
+4. IIn python, get to know how to adjust image sizes
+
+ 
 
