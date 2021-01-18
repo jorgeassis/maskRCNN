@@ -359,6 +359,17 @@ totalGeometryPredicted.area
 totalGeometryaccuracyUnion.area
 totalGeometryaccuracyDiff.area
  
+# Accuracy indexes
+# https://towardsdatascience.com/how-accurate-is-image-segmentation-dd448f896388
+
+# Jaccard’s Index (Intersection over Union, IoU)
+
+index = totalGeometryaccuracyUnion / ( totalGeometryObserved.area + totalGeometryPredicted.area - totalGeometryaccuracyUnion )
+
+# Dice Coefficient
+
+index = 2 * totalGeometryaccuracyUnion / ( 2 *  totalGeometryaccuracyUnion + ( totalGeometryObserved.area + totalGeometryPredicted.area - totalGeometryaccuracyUnion ))
+
 # use descartes to create the matplotlib patches
 ax = plt.gca()
 ax.add_patch(descartes.PolygonPatch(totalGeometryaccuracyUnion, fc='GREEN', ec='GREEN', alpha=0.5))
@@ -395,28 +406,13 @@ r['scores']
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
 
-## Evaluation
-
-# Compute VOC-Style mAP @ IoU=0.5
-# Running on 10 images. Increase for better accuracy.
-
-# visualize.display_weight_stats(model)
+## Tunning parameters with cross-validation
 
 image_ids = np.random.choice(dataset_val.image_ids, 10)
 APs = []
 for image_id in image_ids:
     # Load image and ground truth data
-    image, image_meta, gt_class_id, gt_bbox, gt_mask =\
-        modellib.load_image_gt(dataset_val, inferenceConfig,
-                               image_id, use_mini_mask=False)
-    molded_images = np.expand_dims(modellib.mold_image(image, inferenceConfig), 0)
-    # Run object detection
-    results = model.detect([image], verbose=0)
-    r = results[0]
-    # Compute AP
-    AP, precisions, recalls, overlaps =\
-        utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-                         r["rois"], r["class_ids"], r["scores"], r['masks'])
-    APs.append(AP)
+    index = 
+    APs.append(index)
 
 print("mAP: ", np.mean(APs))
