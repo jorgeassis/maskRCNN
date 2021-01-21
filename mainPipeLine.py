@@ -11,6 +11,7 @@ for element in dir():
 
 del element
 
+
 ## Packages and main configuration
 
 import os
