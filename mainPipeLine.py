@@ -11,7 +11,6 @@ for element in dir():
 
 del element
 
-
 ## Packages and main configuration
 
 import os
@@ -408,6 +407,7 @@ r['scores']
 ## ------------------------------------------------------------------------
 
 ## Tunning parameters with cross-validation
+## https://towardsdatascience.com/3-ways-to-tune-hyperparameters-of-machine-learning-models-with-python-cda64b62e0ac
 
 image_ids = np.random.choice(dataset_val.image_ids, 10)
 APs = []
