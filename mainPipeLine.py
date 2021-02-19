@@ -1,5 +1,14 @@
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
+## CHAGE LOG
+##
+## Implement the Use of GPU
+## https://github.com/matterport/Mask_RCNN/issues/1360
+##
+## ------------------------------------------------------------------------
+## ------------------------------------------------------------------------
+##
+##
 
 /Users/jorgeassis/miniconda3/bin/python3
 
@@ -58,7 +67,8 @@ modelDirectory = os.path.join("../../", "logs")
 
 ## Dataset Directory
 
-datasetDirectory = os.path.join(rootDirectory, "Data/")
+# datasetDirectory = os.path.join(rootDirectory, "Data/")
+datasetDirectory = "../../Data/4200/"
 
 ## Local path to trained weights file
 weightsFilePath = os.path.join("../../", "mask_rcnn_coco.h5")
@@ -67,14 +77,34 @@ class mainConfig(Config):
     """Configuration for training on the toy  dataset.
     Derives from the base Config class and overrides some values.
     """
-    # Use small images for faster training. Set the limits of the small side
-    # the large side, and that determines the image shape.
-    #IMAGE_MIN_DIM = 128
-    #IMAGE_MAX_DIM = 128
+    #
+    # Details: https://github.com/matterport/Mask_RCNN/blob/master/mrcnn/config.py
+    #
+    # Set the limits of the image shape. Use small images for faster training. 
+    #IMAGE_MIN_DIM = 640
+    IMAGE_MAX_DIM = 1024
+    # Available resizing modes:
+    # none:   No resizing or padding. Return the image unchanged.
+    # square: Resize and pad with zeros to get a square image
+    #         of size [max_dim, max_dim].
+    # pad64:  Pads width and height with zeros to make them multiples of 64.
+    #         If IMAGE_MIN_DIM or IMAGE_MIN_SCALE are not None, then it scales
+    #         up before padding. IMAGE_MAX_DIM is ignored in this mode.
+    #         The multiple of 64 is needed to ensure smooth scaling of feature
+    #         maps up and down the 6 levels of the FPN pyramid (2**6=64).
+    # crop:   Picks random crops from the image. First, scales the image based
+    #         on IMAGE_MIN_DIM and IMAGE_MIN_SCALE, then picks a random crop of
+    #         size IMAGE_MIN_DIM x IMAGE_MIN_DIM. Can be used in training only.
+    #         IMAGE_MAX_DIM is not used in this mode.
+    IMAGE_RESIZE_MODE = "square"
+    # Number of color channels per image. RGB = 3, grayscale = 1, RGB-D = 4
+    # Changing this requires other changes in the code. See the WIKI for more
+    # details: https://github.com/matterport/Mask_RCNN/wiki
+    IMAGE_CHANNEL_COUNT = 3
     # Give the configuration a recognizable name
-    NAME = "circle" # trash
+    NAME = "kelp" # trash
     # We use a GPU with 12GB memory, which can fit two images.
-    # Adjust down if you use a smaller GPU.
+    # Adjust down if you use a smaller GPU. When using only a CPU, this needs to be set to 1.
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     # Number of classes (including background)
@@ -103,7 +133,7 @@ class CustomDataset(utils.Dataset):
         """
         # Add classes. We have only one class to add.
         self.add_class("object", 1, "kelp") # check name in via_region_data.json
-        self.add_class("object", 2, "clouds")
+        # self.add_class("object", 2, "clouds")
         # self.add_class("object", 3, "paper")
         # self.add_class("object", 4, "trash")
         # Train or validation dataset?
@@ -126,7 +156,7 @@ class CustomDataset(utils.Dataset):
             objects = [s['region_attributes']['name'] for s in a['regions']]
             print("objects:",objects)
             # name_dict = {"bottle": 1,"glass": 2,"paper": 3,"trash": 4}
-            name_dict = {"circle": 1}
+            name_dict = {"kelp": 1}
             # key = tuple(name_dict)
             num_ids = [name_dict[a] for a in objects]
             # num_ids = [int(n['Event']) for n in objects]
@@ -199,14 +229,6 @@ dataset_val = CustomDataset()
 dataset_val.load_custom(args.dataset, "val")
 dataset_val.prepare()
 
-# Load and display random samples
-
-# image_ids = np.random.choice(dataset_train.image_ids, 4)
-# for image_id in image_ids:
-#     image = dataset_train.load_image(image_id)
-#     mask, class_ids = dataset_train.load_mask(image_id)
-#     visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)
-
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
 
@@ -227,15 +249,26 @@ model.load_weights(weightsFilePath, by_name=True, exclude=[
 
 config.LEARNING_RATE
 
+t0 = time.time()
+
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
             epochs=config.N_EPOCHS,
             layers='heads')
 
+t1 = time.time()
+
+t2 = time.time()
+
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE / 10,
             epochs=2, 
             layers="all")
+
+t3 = time.time()
+
+t1-t0
+t3-t2
 
 ## Save weights
 
@@ -265,7 +298,15 @@ model = modellib.MaskRCNN(mode="inference",
 
 # weightsFilePathFinal = weightsFilePath
 # weightsFilePathFinal = model.find_last() # Check https://github.com/matterport/Mask_RCNN/issues/885
-# weightsFilePathFinal = "../../logs/circle20210111T1142/mask_rcnn_circle_0000.h5"
+# weightsFilePathFinal = "../../logs/kelp20210219T1027/mask_rcnn_kelp_0001.h5"
+
+import glob
+
+files = glob.glob("../../logs/" + '/**/*.h5', recursive=True)
+import os
+>>> statinfo = os.stat('somefile.txt')
+>>> statinfo
+statinfo.st_mtime
 
 # Load trained weights
 
