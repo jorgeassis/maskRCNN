@@ -257,18 +257,7 @@ model.train(dataset_train, dataset_val,
             layers='heads')
 
 t1 = time.time()
-
-t2 = time.time()
-
-model.train(dataset_train, dataset_val, 
-            learning_rate=config.LEARNING_RATE / 10,
-            epochs=2, 
-            layers="all")
-
-t3 = time.time()
-
 t1-t0
-t3-t2
 
 ## Save weights
 
@@ -299,6 +288,9 @@ model = modellib.MaskRCNN(mode="inference",
 # weightsFilePathFinal = weightsFilePath
 # weightsFilePathFinal = model.find_last() # Check https://github.com/matterport/Mask_RCNN/issues/885
 # weightsFilePathFinal = "../../logs/kelp20210219T1027/mask_rcnn_kelp_0001.h5"
+
+
+# ! UNDER DEVELOPMENT ! #
 
 import glob
 
