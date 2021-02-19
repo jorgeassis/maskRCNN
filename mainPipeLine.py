@@ -23,6 +23,8 @@ del element
 ## Packages and main configuration
 
 import os
+import glob
+
 import sys
 import random
 import math
@@ -39,7 +41,6 @@ import json
 import skimage.draw
 import skimage.viewer
 
-import math
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 from shapely import geometry
@@ -292,10 +293,8 @@ model = modellib.MaskRCNN(mode="inference",
 
 # ! UNDER DEVELOPMENT ! #
 
-import glob
 
 files = glob.glob("../../logs/" + '/**/*.h5', recursive=True)
-import os
 >>> statinfo = os.stat('somefile.txt')
 >>> statinfo
 statinfo.st_mtime

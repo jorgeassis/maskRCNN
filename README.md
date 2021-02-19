@@ -16,18 +16,3 @@ https://medium.com/@gabogarza/mask-r-cnn-for-ship-detection-segmentation-a1108b5
 https://thebinarynotes.com/how-to-train-mask-r-cnn-on-the-custom-dataset/
 
 https://medium.com/analytics-vidhya/taming-the-hyper-parameters-of-mask-rcnn-3742cb3f0e1b
-
-### TODOs
-
-1. Get to known Landsat scene codes
-     https://earthexplorer.usgs.gov
-
-2. Go to python and test downloading
-	 Search for additional scripts / approaches
-
-3. In python, get to know how to extract the proper band for "Kelp canopy area and biomass"
-
-4. IIn python, get to know how to adjust image sizes
-
- 
-
