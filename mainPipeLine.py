@@ -10,7 +10,7 @@
 ##
 ##
 
-/Users/jorgeassis/miniconda3/bin/python3
+# /Users/jorgeassis/miniconda3/bin/python3
 
 ## Erase memory objects
 
@@ -69,7 +69,7 @@ modelDirectory = os.path.join("../../", "logs")
 ## Dataset Directory
 
 # datasetDirectory = os.path.join(rootDirectory, "Data/")
-datasetDirectory = "../../Data/4200/"
+datasetDirectory = "Data/kelpPatches/"
 
 ## Local path to trained weights file
 weightsFilePath = os.path.join("../../", "mask_rcnn_coco.h5")
@@ -83,7 +83,7 @@ class mainConfig(Config):
     #
     # Set the limits of the image shape. Use small images for faster training. 
     #IMAGE_MIN_DIM = 640
-    IMAGE_MAX_DIM = 1024
+    #IMAGE_MAX_DIM = 1024
     # Available resizing modes:
     # none:   No resizing or padding. Return the image unchanged.
     # square: Resize and pad with zeros to get a square image
@@ -97,7 +97,7 @@ class mainConfig(Config):
     #         on IMAGE_MIN_DIM and IMAGE_MIN_SCALE, then picks a random crop of
     #         size IMAGE_MIN_DIM x IMAGE_MIN_DIM. Can be used in training only.
     #         IMAGE_MAX_DIM is not used in this mode.
-    IMAGE_RESIZE_MODE = "square"
+    #IMAGE_RESIZE_MODE = "square"
     # Number of color channels per image. RGB = 3, grayscale = 1, RGB-D = 4
     # Changing this requires other changes in the code. See the WIKI for more
     # details: https://github.com/matterport/Mask_RCNN/wiki
@@ -113,10 +113,10 @@ class mainConfig(Config):
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 100
     # Skip detections with < 90% confidence
-    DETECTION_MIN_CONFIDENCE = 0.9
+    DETECTION_MIN_CONFIDENCE = 0.1
     # use small validation steps since the epoch is small
     VALIDATION_STEPS = 5
-    N_EPOCHS = 1 # ??
+    N_EPOCHS = 1 
 
 config = mainConfig()
 config.display()
@@ -283,21 +283,15 @@ model = modellib.MaskRCNN(mode="inference",
                           config=inferenceConfig,
                           model_dir=modelDirectory)
 
-# Get path to saved weights
-# Either set a specific path or find last trained weights
-
-# weightsFilePathFinal = weightsFilePath
-# weightsFilePathFinal = model.find_last() # Check https://github.com/matterport/Mask_RCNN/issues/885
-# weightsFilePathFinal = "../../logs/kelp20210219T1027/mask_rcnn_kelp_0001.h5"
-
-
-# ! UNDER DEVELOPMENT ! #
-
+# Get path of last saved weights
 
 files = glob.glob("../../logs/" + '/**/*.h5', recursive=True)
->>> statinfo = os.stat('somefile.txt')
->>> statinfo
-statinfo.st_mtime
+filesCreatingTime = []
+
+for i in range(len(files)):
+    filesCreatingTime.append(os.stat(glob.glob("../../logs/" + '/**/*.h5', recursive=True)[i])[1])
+
+weightsFilePathFinal = files[files.index(max(files))]
 
 # Load trained weights
 
@@ -330,7 +324,6 @@ r = results[0]
 print(r.keys())
 visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'], 
                             dataset_val.class_names, r['scores'], figsize=(8, 8))
-
 
 # Regions identified xmin, ymin, xmax and ymax
 r['rois']
@@ -380,7 +373,7 @@ for i in range(gt_mask.shape[-1]):
 totalGeometryObserved = cascaded_union(totalGeometry)
 
 boundaryO = gpd.GeoSeries(totalGeometryObserved)
-boundaryO.plot(color = 'red')
+boundaryO.plot(color = 'green')
 plt.show()
 
 totalGeometryaccuracyUnion = totalGeometryObserved.intersection(totalGeometryPredicted)
@@ -396,11 +389,13 @@ totalGeometryaccuracyDiff.area
 
 # Jaccard’s Index (Intersection over Union, IoU)
 
-index = totalGeometryaccuracyUnion / ( totalGeometryObserved.area + totalGeometryPredicted.area - totalGeometryaccuracyUnion )
+index = totalGeometryaccuracyUnion.area / ( totalGeometryObserved.area + totalGeometryPredicted.area - totalGeometryaccuracyUnion.area )
+index
 
 # Dice Coefficient
 
-index = 2 * totalGeometryaccuracyUnion / ( 2 *  totalGeometryaccuracyUnion + ( totalGeometryObserved.area + totalGeometryPredicted.area - totalGeometryaccuracyUnion ))
+index = 2 * totalGeometryaccuracyUnion.area / ( 2 *  totalGeometryaccuracyUnion.area + ( totalGeometryObserved.area + totalGeometryPredicted.area - totalGeometryaccuracyUnion.area ))
+index
 
 # use descartes to create the matplotlib patches
 ax = plt.gca()
@@ -416,7 +411,7 @@ plt.show()
 ## --------------------------
 # Test on a external image
 
-externalImagePath = "Data/0 Bigger size.png" # Data/val/3.png # Data/0.png # Data/0 Bigger size.png
+externalImagePath = "Data/jpg/LC08_L2SP_042036_20201014_20201105_02_T1_SR12.jpeg" # Data/val/3.png # Data/0.png # Data/0 Bigger size.png
 
 # display image
 
@@ -429,9 +424,7 @@ img = img_to_array(img)
 
 results = model.detect([img], verbose=1)
 r = results[0]
-
-visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'], 
-                            dataset_val.class_names, r['scores'], figsize=(8, 8))
+visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'], dataset_val.class_names, r['scores'], figsize=(8, 8))
 
 r['scores']
 

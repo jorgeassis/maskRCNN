@@ -34,13 +34,15 @@ ee.Initialize()
 ## Select collections
 ## check the catalog: https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC08_C01_T1_SR
 
-landsat = ee.ImageCollection("LANDSAT/LC08/C01/T1_SR").filter(ee.Filter.eq('WRS_PATH', 40)).filter(ee.Filter.eq('WRS_ROW', 37)).select(['B5', 'B3', 'B2'])
+landsat = ee.ImageCollection("LANDSAT/LC08/C01/T1_SR").filter(ee.Filter.eq('WRS_PATH', 42)).filter(ee.Filter.eq('WRS_ROW', 36)).select(['B5', 'B3', 'B2'])
 
 ## .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE',20)) #delete the first hashtag in this line and filter by cloud cover
 
 ## Choose dates
+#  2020/10/14
+# LC08_L2SP_042036_20201014_20201105_02_T1
 
-landsat = landsat.filterDate('2018-07-15','2018-07-30')
+landsat = landsat.filterDate('2020-10-13','2020-10-15')
 count = landsat.size()
 print('Number of scenes to download: ', str(count.getInfo())+'\n')
 
@@ -52,10 +54,10 @@ landsatLeastCloudy = landsat.sort('CLOUD_COVER').first()
 
 parameters = {'min': 0,
               'max': 1000,
-              'bands': ['B5', 'B3', 'B2'],
-              'dimensions': 512}
+              'bands': ['B2', 'B3', 'B5'],
+              'dimensions': 1024}
 
-geetools.batch.Export.imagecollection.toDrive(landsat, 'LandStatBulkDownload', scale=30)
+geetools.batch.Export.imagecollection.toDrive(landsat, 'LandStatDownload', scale=30)
 
 ## ---------------------------------------------------------------
 ## ---------------------------------------------------------------
@@ -86,3 +88,6 @@ gdal.Translate(
     '../../Data/LC08_040037_20180723.tif',
     options=options_string
 )
+
+
+
