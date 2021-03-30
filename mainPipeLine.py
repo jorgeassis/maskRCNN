@@ -74,50 +74,8 @@ datasetDirectory = "Data/kelpPatches/"
 ## Local path to trained weights file
 weightsFilePath = os.path.join("../../", "mask_rcnn_coco.h5")
 
-class mainConfig(Config):
-    """Configuration for training on the toy  dataset.
-    Derives from the base Config class and overrides some values.
-    """
-    #
-    # Details: https://github.com/matterport/Mask_RCNN/blob/master/mrcnn/config.py
-    #
-    # Set the limits of the image shape. Use small images for faster training. 
-    #IMAGE_MIN_DIM = 640
-    #IMAGE_MAX_DIM = 1024
-    # Available resizing modes:
-    # none:   No resizing or padding. Return the image unchanged.
-    # square: Resize and pad with zeros to get a square image
-    #         of size [max_dim, max_dim].
-    # pad64:  Pads width and height with zeros to make them multiples of 64.
-    #         If IMAGE_MIN_DIM or IMAGE_MIN_SCALE are not None, then it scales
-    #         up before padding. IMAGE_MAX_DIM is ignored in this mode.
-    #         The multiple of 64 is needed to ensure smooth scaling of feature
-    #         maps up and down the 6 levels of the FPN pyramid (2**6=64).
-    # crop:   Picks random crops from the image. First, scales the image based
-    #         on IMAGE_MIN_DIM and IMAGE_MIN_SCALE, then picks a random crop of
-    #         size IMAGE_MIN_DIM x IMAGE_MIN_DIM. Can be used in training only.
-    #         IMAGE_MAX_DIM is not used in this mode.
-    #IMAGE_RESIZE_MODE = "square"
-    # Number of color channels per image. RGB = 3, grayscale = 1, RGB-D = 4
-    # Changing this requires other changes in the code. See the WIKI for more
-    # details: https://github.com/matterport/Mask_RCNN/wiki
-    IMAGE_CHANNEL_COUNT = 3
-    # Give the configuration a recognizable name
-    NAME = "kelp" # trash
-    # We use a GPU with 12GB memory, which can fit two images.
-    # Adjust down if you use a smaller GPU. When using only a CPU, this needs to be set to 1.
-    GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
-    # Number of classes (including background)
-    NUM_CLASSES = 1 + 1  # Background + shapes (4)
-    # Number of training steps per epoch
-    STEPS_PER_EPOCH = 100
-    # Skip detections with < 90% confidence
-    DETECTION_MIN_CONFIDENCE = 0.1
-    # use small validation steps since the epoch is small
-    VALIDATION_STEPS = 5
-    N_EPOCHS = 1 
-
+# Read the config file
+exec(open('config.py').read())
 config = mainConfig()
 config.display()
 
