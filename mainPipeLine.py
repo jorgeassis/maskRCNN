@@ -263,8 +263,7 @@ image_id = random.choice(dataset_val.image_ids)
 image_id = 0
 
 original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
-    modellib.load_image_gt(dataset_val, inferenceConfig, 
-                           image_id, use_mini_mask=False)
+    modellib.load_image_gt(dataset_val, inferenceConfig, image_id, use_mini_mask=False)
 
 log("original_image", original_image)
 log("image_meta", image_meta)
