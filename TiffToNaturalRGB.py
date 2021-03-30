@@ -24,7 +24,7 @@ from keras.preprocessing.image import array_to_img
 from PIL import Image
 
 # Where the landsat files are
-in_dir = '../../Data/LC08_L2SP_042036_20201014_20201105_02_T1/'
+in_dir = '../../Data/Scenes/'
 
 # Where the jpg files are goind to be dumped
 dumpFolder = 'Data/jpg/'
