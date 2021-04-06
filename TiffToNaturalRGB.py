@@ -38,7 +38,6 @@ def normRange(band):
     return ((band - band_min)/(band_max - band_min))
 
 # Where the landsat files are
-in_dir = '../../Data/Scenes/'
 in_dir = "/Volumes/Jellyfish/GDrive/" # '../../Data/Scenes/'
 
 # Where the jpg files are goind to be dumped
@@ -85,7 +84,7 @@ for i in range(len(listTiffFiles)):
     im = Image.fromarray(rgb_uint8)
     im.save(dumpFolder + tileName + ".jpeg")
     
-    width, height = im.size   # Get dimensions
+     width, height = im.size   # Get dimensions
 
     fileNumber = 0
     for w in range(len(list(range(0,width,1024)))-1):
@@ -97,7 +96,6 @@ for i in range(len(listTiffFiles)):
             bottom = list(range(0,height,1024))[h+1]
             
             cropped_im = im.crop((left, top, right, bottom))
-            # cropped_im.show()
             fileNumber = fileNumber + 1
             cropped_im.save(dumpFolder + tileName + str(fileNumber) + '.jpeg')
 
