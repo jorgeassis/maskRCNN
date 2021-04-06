@@ -23,76 +23,66 @@ from keras.preprocessing.image import array_to_img
 
 from PIL import Image
 
-# Where the landsat files are
-in_dir = '../../Data/Scenes/'
-
-# Where the jpg files are goind to be dumped
-dumpFolder = 'Data/jpg/'
-
-b1_file = glob.glob(in_dir + '**B5.TIF') # near infra-red band
-b2_file = glob.glob(in_dir + '**B3.TIF') # green band
-b3_file = glob.glob(in_dir + '**B2.TIF') # blue band
-
 def normAvSD(band):
-    band_mean = band[band != 0].mean()
-    band_Std = band[band != 0].std()
+    band_mean = np.nanmean(band[band != 0])
+    band_Std = np.nanstd(band[band != 0])
     band_min = band_mean - band_Std
     band_max = band_mean + band_Std
     band[band >= band_max] = band_max
     band[band <= band_min] = band_min
-    #return(exposure.rescale_intensity(band, in_range=(band_min,band_max)))
     return ((band - band_min)/(band_max - band_min))
 
-for i in range(len(b1_file)):   
+def normRange(band):
+    band_min = np.nanmin(band)
+    band_max = np.nanmax(band)
+    return ((band - band_min)/(band_max - band_min))
+
+# Where the landsat files are
+in_dir = '../../Data/Scenes/'
+in_dir = "/Volumes/Jellyfish/GDrive/" # '../../Data/Scenes/'
+
+# Where the jpg files are goind to be dumped
+dumpFolder = 'Data/jpg/'
+
+listTiffFiles = glob.glob(in_dir + '**.tif')
+
+for i in range(len(listTiffFiles)):   
     
-    tileName = b1_file[i].replace(in_dir , "")
+    tileName = listTiffFiles[i].replace(in_dir , "")
     tileName = tileName.replace(".TIF", "")
-    tileName = tileName[:-3]
-    
-    # Open each band using gdal
-    b1_link = gdal.Open(b1_file[i])
-    b2_link = gdal.Open(b2_file[i])
-    b3_link = gdal.Open(b3_file[i])
-    
-    b1 = b1_link.ReadAsArray()
-    b2 = b2_link.ReadAsArray()
-    b3 = b3_link.ReadAsArray()
+    tileName = tileName.replace(".tif", "")
 
-    # b1 = skimage.exposure.equalize_hist(b1)
-    # b2 = skimage.exposure.equalize_hist(b2)
-    # b3 = skimage.exposure.equalize_hist(b3)
-
+    # Open using gdal
+    
+    ds = gdal.Open(listTiffFiles[i])
+    
+    red = ds.GetRasterBand(1)
+    green = ds.GetRasterBand(2)
+    blue = ds.GetRasterBand(3)
+    
+    red = red.ReadAsArray()
+    green = green.ReadAsArray()
+    blue = blue.ReadAsArray()
+    
     # normalize data to mean +- std
-    
-    b1 = normAvSD(b1)
-    b2 = normAvSD(b2) 
-    b3 = normAvSD(b3) 
+    red = normAvSD(red)
+    green = normAvSD(green) 
+    blue = normAvSD(blue) 
 
-    # create three color image
-    rgb = np.dstack((b2, b1, b3))
-    #numpy.amax(rgb)
-    #numpy.average(rgb)
-    #rgb.shape
+    # normalize data to 0-1
+    # red = normRange(red)
+    # green = normRange(green) 
+    # blue = normRange(blue) 
 
-    # Visualize RGB
+    rgb_uint8 = (np.dstack((red,green,blue)) * 255.999).astype(np.uint8)
     
-    img_pil = array_to_img(rgb)
-    
-    #fig = plt.figure()
-    #ax = fig.add_subplot()
-    #ax.imshow(img_pil)
-    #plt.show()
+    img_pil = array_to_img(rgb_uint8)
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.imshow(img_pil)
+    plt.show()
 
-    img_array = img_to_array(img_pil)
-    img_array = img_array.astype(np.uint8)
-    
-    #img_array = img_array * 255
-    
-    #numpy.amax(img_array)
-    #numpy.amin(img_array)
-    #numpy.average(img_array)
-    
-    im = Image.fromarray(img_array)
+    im = Image.fromarray(rgb_uint8)
     im.save(dumpFolder + tileName + ".jpeg")
     
     width, height = im.size   # Get dimensions
