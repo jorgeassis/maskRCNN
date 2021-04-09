@@ -38,10 +38,10 @@ def normRange(band):
     return ((band - band_min)/(band_max - band_min))
 
 # Where the landsat files are
-in_dir = "/Volumes/Jellyfish/GDrive/" # '../../Data/Scenes/'
+in_dir = '../../Data/Raw Files/'
 
 # Where the jpg files are goind to be dumped
-dumpFolder = 'Data/jpg/'
+dumpFolder = '../../Data/Dataset 1/unsorted/'
 
 listTiffFiles = glob.glob(in_dir + '**.tif')
 
@@ -55,8 +55,11 @@ for i in range(len(listTiffFiles)):
     
     ds = gdal.Open(listTiffFiles[i])
     
-    red = ds.GetRasterBand(1)
-    green = ds.GetRasterBand(2)
+    # Dataset1  1, 2, 3
+    # Dataset2  2, 1, 3
+
+    red = ds.GetRasterBand(2)
+    green = ds.GetRasterBand(1)
     blue = ds.GetRasterBand(3)
     
     red = red.ReadAsArray()
@@ -64,17 +67,17 @@ for i in range(len(listTiffFiles)):
     blue = blue.ReadAsArray()
     
     # normalize data to mean +- std
-    red = normAvSD(red)
-    green = normAvSD(green) 
-    blue = normAvSD(blue) 
+    # red = normAvSD(red)
+    # green = normAvSD(green) 
+    # blue = normAvSD(blue) 
 
     # normalize data to 0-1
-    # red = normRange(red)
-    # green = normRange(green) 
-    # blue = normRange(blue) 
+    red = normRange(red)
+    green = normRange(green) 
+    blue = normRange(blue) 
 
     rgb_uint8 = (np.dstack((red,green,blue)) * 255.999).astype(np.uint8)
-    
+
     img_pil = array_to_img(rgb_uint8)
     fig = plt.figure()
     ax = fig.add_subplot()
@@ -84,7 +87,7 @@ for i in range(len(listTiffFiles)):
     im = Image.fromarray(rgb_uint8)
     im.save(dumpFolder + tileName + ".jpeg")
     
-     width, height = im.size   # Get dimensions
+    width, height = im.size # Get dimensions
 
     fileNumber = 0
     for w in range(len(list(range(0,width,1024)))-1):
@@ -98,4 +101,5 @@ for i in range(len(listTiffFiles)):
             cropped_im = im.crop((left, top, right, bottom))
             fileNumber = fileNumber + 1
             cropped_im.save(dumpFolder + tileName + str(fileNumber) + '.jpeg')
+
 
