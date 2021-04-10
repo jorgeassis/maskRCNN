@@ -69,7 +69,7 @@ modelDirectory = os.path.join("../../", "logs")
 ## Dataset Directory
 
 # datasetDirectory = os.path.join(rootDirectory, "Data/")
-datasetDirectory = "Data/kelpPatches/"
+datasetDirectory = "../../Data/Dataset/"
 
 ## Local path to trained weights file
 weightsFilePath = os.path.join("../../", "mask_rcnn_coco.h5")
@@ -217,6 +217,11 @@ model.train(dataset_train, dataset_val,
 
 t1 = time.time()
 t1-t0
+
+model.train(dataset_train, dataset_val,
+            learning_rate=config.LEARNING_RATE,
+            epochs=config.N_EPOCHS,
+            layers='all')
 
 ## Save weights
 

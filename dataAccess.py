@@ -32,7 +32,7 @@ ee.Initialize()
 ## Get images
 
 ## Select collections
-## check the catalog: https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC08_C01_T1_SR
+## check the catalog: https://developers.google.com/earth-engine/datasets/catalog/landsat
 
 # ee.ImageCollection("LANDSAT/LT05/C01/T1_SR")
 # ee.ImageCollection("LANDSAT/LC08/C01/T1_SR")
