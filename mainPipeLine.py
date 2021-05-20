@@ -10,6 +10,9 @@
 ##
 ##
 
+# ~/opt/anaconda3/envs/mrcnn/bin/python
+
+
 ## Erase memory objects
 
 for element in dir():
@@ -67,13 +70,13 @@ modelDirectory = os.path.join("../../", "logs")
 ## Dataset Directory
 
 # datasetDirectory = os.path.join(rootDirectory, "Data/")
-datasetDirectory = "../../Data/Dataset/"
+datasetDirectory = "../../Data/Dataset 3/" # datasetDirectory = "Data/kelpPatches/"
 
 ## Local path to trained weights file
 weightsFilePath = os.path.join("../../", "mask_rcnn_coco.h5")
 
 # Read the config file
-exec(open('config.py').read())
+exec(open('customConfig.py').read())
 config = mainConfig()
 config.display()
 
@@ -99,9 +102,19 @@ dataset_train.prepare()
 
 # Validation dataset
 dataset_val = CustomDataset()
-dataset_val.load_custom(args.dataset, "val")
+dataset_val.load_custom(args.dataset, "train") # val !!!!!!!!!
 dataset_val.prepare()
 
+## ------------------------------------------------------------------------
+## ------------------------------------------------------------------------
+
+## Visualize dataset
+
+for image_id in dataset_train.image_ids:
+    image = dataset_train.load_image(image_id)
+    mask, class_ids = dataset_train.load_mask(image_id)
+    visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)
+    
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
 
@@ -120,28 +133,71 @@ model.load_weights(weightsFilePath, by_name=True, exclude=[
             "mrcnn_class_logits", "mrcnn_bbox_fc",
             "mrcnn_bbox", "mrcnn_mask"])
 
-config.LEARNING_RATE
-
+from imgaug import augmenters as iaa
+augmentationSeq = [iaa.Fliplr(0.5), iaa.Flipud(0.5), iaa.Affine(rotate=(0, 360)), iaa.Multiply((0.5, 1.5)) ] #iaa.Affine(scale=(0.5, 1.5)),
+                                  
 t0 = time.time()
 
+config.LEARNING_RATE = 0.01
+config.N_EPOCHS = 10
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
             epochs=config.N_EPOCHS,
-            layers='heads')
+            layers='heads' )
 
 t1 = time.time()
 t1-t0
 
+history = model.keras_model.history.history
+
+config.LEARNING_RATE = 0.0001
+config.N_EPOCHS = 40
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
             epochs=config.N_EPOCHS,
-            layers='all')
+            layers='all' ) # , augmentation = iaa.Sequential(augmentationSeq))
+
+
+t1 = time.time()
+t1-t0
+
+new_history = model.keras_model.history.history
 
 ## Save weights
 
 # Typically not needed because callbacks save after every epoch
 # Uncomment to save manually
 # model.keras_model.save_weights(weightsFilePath)
+
+## ------------------------------------------------------------------------
+## ------------------------------------------------------------------------
+
+for k in new_history: history[k] = history[k] + new_history[k]
+#if only heads were trained:
+#for k in history: history[k] = history[k] 
+
+epochs = range(10)
+
+plt.figure(figsize=(18, 6))
+
+plt.subplot(131)
+plt.plot(epochs, history['loss'], label="train loss")
+plt.plot(epochs, history['val_loss'], label="valid loss")
+plt.legend()
+plt.subplot(132)
+plt.plot(epochs, history['mrcnn_class_loss'], label="train class loss")
+plt.plot(epochs, history['val_mrcnn_class_loss'], label="valid class loss")
+plt.legend()
+plt.subplot(133)
+plt.plot(epochs, history['mrcnn_mask_loss'], label="train mask loss")
+plt.plot(epochs, history['val_mrcnn_mask_loss'], label="valid mask loss")
+plt.legend()
+
+plt.show()
+
+best_epoch = np.argmin(history["val_loss"]) + 1
+print("Best epoch: ", best_epoch)
+print("Valid loss: ", history["val_loss"][best_epoch-1])
 
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
@@ -156,7 +212,7 @@ inferenceConfig = InferenceConfig()
 
 # Recreate the model in inference mode
 
-model = modellib.MaskRCNN(mode="inference", 
+model = modellib.MaskRCNN(mode="inference",
                           config=inferenceConfig,
                           model_dir=modelDirectory)
 
@@ -168,7 +224,12 @@ filesCreatingTime = []
 for i in range(len(files)):
     filesCreatingTime.append(os.stat(glob.glob("../../logs/" + '/**/*.h5', recursive=True)[i])[1])
 
+# Get the last
 weightsFilePathFinal = files[files.index(max(files))]
+
+# Chose from best_epoch
+
+weightsFilePathFinal = files # Needs to be corrected
 
 # Load trained weights
 
@@ -179,7 +240,7 @@ model.load_weights(weightsFilePathFinal, by_name=True)
 # Test on a val image
 
 image_id = random.choice(dataset_val.image_ids)
-image_id = 0
+image_id = 15
 
 original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
     modellib.load_image_gt(dataset_val, inferenceConfig, image_id, use_mini_mask=False)
@@ -198,7 +259,7 @@ results = model.detect([original_image], verbose=1)
 
 r = results[0]
 print(r.keys())
-visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'], 
+visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
                             dataset_val.class_names, r['scores'], figsize=(8, 8))
 
 # Regions identified xmin, ymin, xmax and ymax
@@ -259,7 +320,7 @@ totalGeometryObserved.area
 totalGeometryPredicted.area
 totalGeometryaccuracyUnion.area
 totalGeometryaccuracyDiff.area
- 
+
 # Accuracy indexes
 # https://towardsdatascience.com/how-accurate-is-image-segmentation-dd448f896388
 
@@ -287,17 +348,17 @@ plt.show()
 ## --------------------------
 # Test on a external image
 
-externalImagePath = "Data/jpg/LC08_L2SP_042036_20201014_20201105_02_T1_SR12.jpeg" # Data/val/3.png # Data/0.png # Data/0 Bigger size.png
+externalImagePath = "../../Data/Dataset 3/train/LC08_040037_20140914_27.jpg"
 
 # display image
 
+plt.clf()
 img = mpimg.imread(externalImagePath)
 imgplot = plt.imshow(img)
 plt.show()
 
 img = load_img(externalImagePath)
 img = img_to_array(img)
-
 results = model.detect([img], verbose=1)
 r = results[0]
 visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'], dataset_val.class_names, r['scores'], figsize=(8, 8))
@@ -314,7 +375,7 @@ image_ids = np.random.choice(dataset_val.image_ids, 10)
 APs = []
 for image_id in image_ids:
     # Load image and ground truth data
-    index = 
+    index =
     APs.append(index)
 
 print("mAP: ", np.mean(APs))

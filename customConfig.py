@@ -36,19 +36,19 @@ class mainConfig(Config):
     # Validation stats are also calculated at each epoch end and they
     # might take a while, so don't set this too small to avoid spending
     # a lot of time on validation stats.
-    STEPS_PER_EPOCH = 1000 #! 100 to 1000
+    STEPS_PER_EPOCH = 1 # default 100, 6000 as suggested in https://github.com/matterport/Mask_RCNN/issues/514
 
     # Number of validation steps to run at the end of every training epoch.
     # A bigger number improves accuracy of validation stats, but slows
     # down the training.
-    VALIDATION_STEPS = 50 #! 5 to 50
+    # VALIDATION_STEPS = 5 # !
 
     # Backbone network architecture
     # Supported values are: resnet50, resnet101.
     # You can also provide a callable that should have the signature
     # of model.resnet_graph. If you do so, you need to supply a callable
     # to COMPUTE_BACKBONE_SHAPE as well
-    BACKBONE = "resnet101"
+    # BACKBONE = "resnet101"
 
     # Only useful if you supply a callable to BACKBONE. Should compute
     # the shape of each layer of the FPN Pyramid.
@@ -64,9 +64,6 @@ class mainConfig(Config):
 
     # Size of the top-down layers used to build the feature pyramid
     # TOP_DOWN_PYRAMID_SIZE = 256
-
-    # Number of classification classes (including background)
-    NUM_CLASSES = 1 + 1  # Override in sub-classes
 
     # Length of square anchor side in pixels
     # RPN_ANCHOR_SCALES = (32, 64, 128, 256, 512)
@@ -133,7 +130,7 @@ class mainConfig(Config):
     # Number of color channels per image. RGB = 3, grayscale = 1, RGB-D = 4
     # Changing this requires other changes in the code. See the WIKI for more
     # details: https://github.com/matterport/Mask_RCNN/wiki
-    IMAGE_CHANNEL_COUNT = 3
+    # IMAGE_CHANNEL_COUNT = 3
 
     # Image mean (RGB)
     # MEAN_PIXEL = np.array([123.7, 116.8, 103.9])
@@ -157,7 +154,8 @@ class mainConfig(Config):
     # MASK_SHAPE = [28, 28]
 
     # Maximum number of ground truth instances to use in one image
-    # MAX_GT_INSTANCES = 100
+    
+    MAX_GT_INSTANCES = 50
 
     # Bounding box refinement standard deviation for RPN and final detections.
     # RPN_BBOX_STD_DEV = np.array([0.1, 0.1, 0.2, 0.2])
@@ -178,7 +176,9 @@ class mainConfig(Config):
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
     # weights to explode. Likely due to differences in optimizer
     # implementation.
+    
     LEARNING_RATE = 0.001
+    
     # LEARNING_MOMENTUM = 0.9
 
     # Weight decay regularization
