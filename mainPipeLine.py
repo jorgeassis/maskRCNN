@@ -12,7 +12,6 @@
 
 # ~/opt/anaconda3/envs/mrcnn/bin/python
 
-
 ## Erase memory objects
 
 for element in dir():
@@ -55,6 +54,8 @@ from mrcnn.model import log
 from keras.preprocessing import image
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import img_to_array
+
+from pandas import DataFrame
 
 os.getcwd()
 
@@ -133,10 +134,7 @@ model.load_weights(weightsFilePath, by_name=True, exclude=[
             "mrcnn_class_logits", "mrcnn_bbox_fc",
             "mrcnn_bbox", "mrcnn_mask"])
 
-from imgaug import augmenters as iaa
-augmentationSeq = [iaa.Fliplr(0.5), iaa.Flipud(0.5), iaa.Affine(rotate=(0, 360)), iaa.Multiply((0.5, 1.5)) ] #iaa.Affine(scale=(0.5, 1.5)),
-                                  
-t0 = time.time()
+# Train heads
 
 config.LEARNING_RATE = 0.01
 config.N_EPOCHS = 10
@@ -145,59 +143,122 @@ model.train(dataset_train, dataset_val,
             epochs=config.N_EPOCHS,
             layers='heads' )
 
-t1 = time.time()
-t1-t0
+# Save loss to file
 
 history = model.keras_model.history.history
+historyDF = DataFrame(history)
+print(historyDF)
+historyDF.to_csv('historyExperimentHeads.csv', index = False, header=True)
 
+# Plot loss
+
+epochs = range(model.epoch)
+plt.figure(figsize=(18, 6))
+
+plt.subplot(131)
+plt.plot(epochs, history['loss'], label="train loss")
+plt.plot(epochs, history['val_loss'], label="valid loss")
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.title('Loss')
+ax = plt.gca()
+ax.get_legend().remove()
+ax.set_xticks(range(model.epoch))
+
+plt.subplot(132)
+plt.plot(epochs, history['mrcnn_bbox_loss'], label="train class loss") 
+plt.plot(epochs, history['val_rpn_bbox_loss'], label="valid class loss")
+plt.title('Mask loss')
+plt.xlabel('Epoch')
+ax = plt.gca()
+ax.get_legend().remove()
+ax.set_xticks(range(model.epoch))
+
+plt.subplot(133)
+plt.plot(epochs, history['mrcnn_mask_loss'], label="train loss")
+plt.plot(epochs, history['val_mrcnn_mask_loss'], label="valid loss")
+plt.title('Mask loss')
+plt.xlabel('Epoch')
+ax = plt.gca()
+ax.get_legend().remove()
+ax.set_xticks(range(model.epoch))
+plt.legend(loc = "upper left")
+plt.legend()
+
+plt.show()
+
+# Get best epoch
+
+best_epoch = np.argmin(history["val_loss"]) + 1
+print("Best epoch: ", best_epoch)
+print("Valid loss: ", history["val_loss"][best_epoch-1])
+
+## Model all layers
+
+from imgaug import augmenters as iaa
+augmentationSeq = [iaa.Fliplr(0.5), iaa.Flipud(0.5), iaa.Affine(rotate=(0, 360)), iaa.Multiply((0.5, 1.5)) ] #iaa.Affine(scale=(0.5, 1.5)),
+     
 config.LEARNING_RATE = 0.0001
 config.N_EPOCHS = 40
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
             epochs=config.N_EPOCHS,
             layers='all' ) # , augmentation = iaa.Sequential(augmentationSeq))
+            
+history = model.keras_model.history.history
+historyDF = DataFrame(history)
+print(historyDF)
+historyDF.to_csv('historyExperimentAll.csv', index = False, header=True)
 
+# Plot loss
 
-t1 = time.time()
-t1-t0
-
-new_history = model.keras_model.history.history
-
-## Save weights
-
-# Typically not needed because callbacks save after every epoch
-# Uncomment to save manually
-# model.keras_model.save_weights(weightsFilePath)
-
-## ------------------------------------------------------------------------
-## ------------------------------------------------------------------------
-
-for k in new_history: history[k] = history[k] + new_history[k]
-#if only heads were trained:
-#for k in history: history[k] = history[k] 
-
-epochs = range(10)
-
+epochs = range(model.epoch)
 plt.figure(figsize=(18, 6))
 
 plt.subplot(131)
 plt.plot(epochs, history['loss'], label="train loss")
 plt.plot(epochs, history['val_loss'], label="valid loss")
-plt.legend()
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.title('Loss')
+ax = plt.gca()
+ax.get_legend().remove()
+ax.set_xticks(range(model.epoch))
+
 plt.subplot(132)
-plt.plot(epochs, history['mrcnn_class_loss'], label="train class loss")
-plt.plot(epochs, history['val_mrcnn_class_loss'], label="valid class loss")
-plt.legend()
+plt.plot(epochs, history['mrcnn_bbox_loss'], label="train class loss") 
+plt.plot(epochs, history['val_rpn_bbox_loss'], label="valid class loss")
+plt.title('Mask loss')
+plt.xlabel('Epoch')
+ax = plt.gca()
+ax.get_legend().remove()
+ax.set_xticks(range(model.epoch))
+
 plt.subplot(133)
-plt.plot(epochs, history['mrcnn_mask_loss'], label="train mask loss")
-plt.plot(epochs, history['val_mrcnn_mask_loss'], label="valid mask loss")
+plt.plot(epochs, history['mrcnn_mask_loss'], label="train loss")
+plt.plot(epochs, history['val_mrcnn_mask_loss'], label="valid loss")
+plt.title('Mask loss')
+plt.xlabel('Epoch')
+ax = plt.gca()
+ax.get_legend().remove()
+ax.set_xticks(range(model.epoch))
+plt.legend(loc = "upper left")
 plt.legend()
 
 plt.show()
 
+# Get best epoch
+
 best_epoch = np.argmin(history["val_loss"]) + 1
 print("Best epoch: ", best_epoch)
 print("Valid loss: ", history["val_loss"][best_epoch-1])
+
+## ------------------------
+
+## Save weights
+# Typically not needed because callbacks save after every epoch
+# Uncomment to save manually
+# model.keras_model.save_weights(weightsFilePath)
 
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
