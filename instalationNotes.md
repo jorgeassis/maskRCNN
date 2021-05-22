@@ -1,6 +1,31 @@
 
+## Instal miniconda
+
+https://docs.conda.io/en/latest/miniconda.html#linux-installers
+
+## Create a VE
+
+conda install python=3.7.1
+
+conda create -n "mrcnn" python=3.7.1
+// conda create -n "mrcnn" python=3.7.1 ipython
+
+conda info --envs
+conda activate mrcnn
+
+/home/myname/miniconda3/envs/mrcnn/bin/python3
+
+## Export environment from previous PC
+
+pip freeze > requirements.txt
+pip install -r requirements.txt
+
+conda env export > requirements.yml
+conda env create -f requirements.yml
+conda-env create -n mrcnn -f=requirements.yml
+
 ## Installation
-0. Python 3.7.1
+0. Python 3.7.10
 1. Clone this repository
 2. Install dependencies
    ```bash
