@@ -96,4 +96,3 @@ for i in range(len(listTiffFiles)):
                                 listTiffFiles[i].replace(".tif", ".jpg"),
                                 projWin = [left, top , right , bottom] )
                                 
-
