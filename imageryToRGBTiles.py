@@ -37,11 +37,11 @@ def normRange(band):
     return ((band - band_min)/(band_max - band_min))
 
 # Where the landsat files are
-in_dir = '/Volumes/Mask RCNN Kelp/Raw Data/Landsat5 (2003-2013)/'
+in_dir = '/media/Bathyscaphe/Mask RCNN for Kelp Detection/Raw Data/Landsat5(1997-2003)/'
 
 # Where the jpg files are goind to be dumped
 dumpFolder = '/Volumes/Jellyfish/GDrive/Manuscripts/Convolutional Neural Networks for kelp canopy identification/Data/Dataset 5/Unsorted/'
-dumpFolder = '/Volumes/Mask RCNN Kelp/Annotations Data/Unsorted/'
+dumpFolder = '/media/Bathyscaphe/Mask RCNN for Kelp Detection/Annotations DataUnsorted/'
 
 listTiffFiles = glob.glob(in_dir + '**.tif')
 

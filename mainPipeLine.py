@@ -10,7 +10,11 @@
 ##
 ##
 
+# Experiments
+# https://docs.google.com/spreadsheets/d/1ZvXmKZ_F-i7OREvv4-kAcxZ8kDTMGu02FK69lyLOokk/edit?ts=60b613b1#gid=0
+
 # ~/opt/anaconda3/envs/mrcnn/bin/python
+# /home/jorgeassis/miniconda3/envs/mrcnn/bin/python
 
 ## Erase memory objects
 
@@ -60,7 +64,7 @@ from pandas import DataFrame
 os.getcwd()
 
 ## Root directory of the project
-rootDirectory = os.path.abspath("/Volumes/Jellyfish/GDrive/Manuscripts/Convolutional Neural Networks for kelp canopy identification/Git/maskRCNN")
+rootDirectory = os.path.abspath("/media/Bathyscaphe/Mask RCNN for Kelp Detection/Code/maskRCNN/")
 
 ## Import Mask RCNN
 sys.path.append(rootDirectory)  # To find local version of the library
@@ -71,7 +75,7 @@ modelDirectory = os.path.join("../../", "logs")
 ## Dataset Directory
 
 # datasetDirectory = os.path.join(rootDirectory, "Data/")
-datasetDirectory = "../../Data/Dataset 3/" # datasetDirectory = "Data/kelpPatches/"
+datasetDirectory = "/media/Bathyscaphe/Mask RCNN for Kelp Detection/Annotations Data/Final Data/" # datasetDirectory = "Data/kelpPatches/"
 
 ## Local path to trained weights file
 weightsFilePath = os.path.join("../../", "mask_rcnn_coco.h5")
@@ -103,7 +107,7 @@ dataset_train.prepare()
 
 # Validation dataset
 dataset_val = CustomDataset()
-dataset_val.load_custom(args.dataset, "train") # val !!!!!!!!!
+dataset_val.load_custom(args.dataset, "val")
 dataset_val.prepare()
 
 ## ------------------------------------------------------------------------
@@ -115,6 +119,12 @@ for image_id in dataset_train.image_ids:
     image = dataset_train.load_image(image_id)
     mask, class_ids = dataset_train.load_mask(image_id)
     visualize.display_top_masks(image, mask, class_ids, dataset_train.class_names)
+    
+
+for image_id in dataset_val.image_ids:
+    image = dataset_val.load_image(image_id)
+    mask, class_ids = dataset_val.load_mask(image_id)
+    visualize.display_top_masks(image, mask, class_ids, dataset_val.class_names)
     
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
@@ -128,6 +138,10 @@ utils.download_trained_weights(weightsFilePath)
 # 1. Only the heads. Here we're freezing all the backbone layers and training only the randomly initialized layers (i.e. the ones that we didn't use pre-trained weights from MS COCO). To train only the head layers, pass `layers='heads'` to the `train()` function.
 # 2. Fine-tune all layers. For this simple example it's not necessary, but we're including it to show the process. Simply pass `layers="all` to train all layers.
 
+
+# Try changing this
+# config.DETECTION_MIN_CONFIDENCE = 0.25
+
 model = modellib.MaskRCNN(mode="training", config=config, model_dir=modelDirectory)
 
 model.load_weights(weightsFilePath, by_name=True, exclude=[
@@ -136,6 +150,8 @@ model.load_weights(weightsFilePath, by_name=True, exclude=[
 
 # Train heads
 
+start = time.time()
+
 config.LEARNING_RATE = 0.01
 config.N_EPOCHS = 10
 model.train(dataset_train, dataset_val,
@@ -143,69 +159,32 @@ model.train(dataset_train, dataset_val,
             epochs=config.N_EPOCHS,
             layers='heads' )
 
+end = time.time()
+
+print(f"Runtime of the program is {(end - start) / 60} minutes")
+
 # Save loss to file
 
 history = model.keras_model.history.history
 historyDF = DataFrame(history)
 print(historyDF)
-historyDF.to_csv('historyExperimentHeads.csv', index = False, header=True)
-
-# Plot loss
-
-epochs = range(model.epoch)
-plt.figure(figsize=(18, 6))
-
-plt.subplot(131)
-plt.plot(epochs, history['loss'], label="train loss")
-plt.plot(epochs, history['val_loss'], label="valid loss")
-plt.ylabel('Loss')
-plt.xlabel('Epoch')
-plt.title('Loss')
-ax = plt.gca()
-ax.get_legend().remove()
-ax.set_xticks(range(model.epoch))
-
-plt.subplot(132)
-plt.plot(epochs, history['mrcnn_bbox_loss'], label="train class loss") 
-plt.plot(epochs, history['val_rpn_bbox_loss'], label="valid class loss")
-plt.title('Mask loss')
-plt.xlabel('Epoch')
-ax = plt.gca()
-ax.get_legend().remove()
-ax.set_xticks(range(model.epoch))
-
-plt.subplot(133)
-plt.plot(epochs, history['mrcnn_mask_loss'], label="train loss")
-plt.plot(epochs, history['val_mrcnn_mask_loss'], label="valid loss")
-plt.title('Mask loss')
-plt.xlabel('Epoch')
-ax = plt.gca()
-ax.get_legend().remove()
-ax.set_xticks(range(model.epoch))
-plt.legend(loc = "upper left")
-plt.legend()
-
-plt.show()
-
-# Get best epoch
-
-best_epoch = np.argmin(history["val_loss"]) + 1
-print("Best epoch: ", best_epoch)
-print("Valid loss: ", history["val_loss"][best_epoch-1])
+historyDF.to_csv('../../Experiments/historyExperimentHeads.csv', index = False, header=True)
 
 ## Model all layers
 
 from imgaug import augmenters as iaa
 augmentationSeq = [iaa.Fliplr(0.5), iaa.Flipud(0.5), iaa.Affine(rotate=(0, 360)), iaa.Multiply((0.5, 1.5)) ] #iaa.Affine(scale=(0.5, 1.5)),
      
-config.LEARNING_RATE = 0.0001
-config.N_EPOCHS = 40
+config.LEARNING_RATE = 0.001
+config.N_EPOCHS = 100 
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
             epochs=config.N_EPOCHS,
-            layers='all' ) # , augmentation = iaa.Sequential(augmentationSeq))
+            layers='all') # , augmentation = iaa.Sequential(augmentationSeq))
             
-history = model.keras_model.history.history
+new_history = model.keras_model.history.history
+for k in new_history: history[k] = history[k] + new_history[k]
+
 historyDF = DataFrame(history)
 print(historyDF)
 historyDF.to_csv('historyExperimentAll.csv', index = False, header=True)
@@ -213,7 +192,7 @@ historyDF.to_csv('historyExperimentAll.csv', index = False, header=True)
 # Plot loss
 
 epochs = range(model.epoch)
-plt.figure(figsize=(18, 6))
+f = plt.figure(figsize=(18, 6))
 
 plt.subplot(131)
 plt.plot(epochs, history['loss'], label="train loss")
@@ -228,7 +207,7 @@ ax.set_xticks(range(model.epoch))
 plt.subplot(132)
 plt.plot(epochs, history['mrcnn_bbox_loss'], label="train class loss") 
 plt.plot(epochs, history['val_rpn_bbox_loss'], label="valid class loss")
-plt.title('Mask loss')
+plt.title('BBox loss')
 plt.xlabel('Epoch')
 ax = plt.gca()
 ax.get_legend().remove()
@@ -246,6 +225,13 @@ plt.legend(loc = "upper left")
 plt.legend()
 
 plt.show()
+f.savefig("../../Experiments/foo.pdf", bbox_inches='tight')
+
+## ------------------------
+##
+## tensorboard --logdir logs/
+##
+## ------------------------
 
 # Get best epoch
 
@@ -273,9 +259,17 @@ inferenceConfig = InferenceConfig()
 
 # Recreate the model in inference mode
 
+inferenceConfig.display()
+inferenceConfig.DETECTION_MIN_CONFIDENCE = 0
+inferenceConfig.DETECTION_NMS_THRESHOLD = 0.9
+
 model = modellib.MaskRCNN(mode="inference",
                           config=inferenceConfig,
                           model_dir=modelDirectory)
+
+# Load from external file 
+
+weightsFilePathFinal = '/media/Bathyscaphe/Mask RCNN for Kelp Detection/logs/kelp20210528T1202/mask_rcnn_kelp_0028.h5'
 
 # Get path of last saved weights
 
@@ -290,7 +284,7 @@ weightsFilePathFinal = files[files.index(max(files))]
 
 # Chose from best_epoch
 
-weightsFilePathFinal = files # Needs to be corrected
+# weightsFilePathFinal = files[2] # Needs to be corrected
 
 # Load trained weights
 
@@ -301,7 +295,7 @@ model.load_weights(weightsFilePathFinal, by_name=True)
 # Test on a val image
 
 image_id = random.choice(dataset_val.image_ids)
-image_id = 15
+image_id = 52
 
 original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
     modellib.load_image_gt(dataset_val, inferenceConfig, image_id, use_mini_mask=False)
@@ -309,7 +303,7 @@ original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
 log("original_image", original_image)
 log("image_meta", image_meta)
 log("gt_class_id", gt_class_id)
-log("gt_bbox", gt_bbox)
+log("gt_bbox", gt_bboSx)
 log("gt_mask", gt_mask)
 
 visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id, dataset_train.class_names, figsize=(8, 8))
@@ -370,7 +364,7 @@ for i in range(gt_mask.shape[-1]):
 
 totalGeometryObserved = cascaded_union(totalGeometry)
 
-boundaryO = gpd.GeoSeries(totalGeometryObserved)
+boundaryO = gpd.GeoSeries(totalGeometryPredicted)
 boundaryO.plot(color = 'green')
 plt.show()
 
@@ -387,15 +381,16 @@ totalGeometryaccuracyDiff.area
 
 # Jaccard’s Index (Intersection over Union, IoU)
 
-index = totalGeometryaccuracyUnion.area / ( totalGeometryObserved.area + totalGeometryPredicted.area - totalGeometryaccuracyUnion.area )
+index = totalGeometryaccuracyUnion.area / ( totalGeometryaccuracyUnion.area  + totalGeometryaccuracyDiff.area )
 index
 
 # Dice Coefficient
 
-index = 2 * totalGeometryaccuracyUnion.area / ( 2 *  totalGeometryaccuracyUnion.area + ( totalGeometryObserved.area + totalGeometryPredicted.area - totalGeometryaccuracyUnion.area ))
+index = 2 * totalGeometryaccuracyUnion.area / ( totalGeometryaccuracyUnion.area  + totalGeometryaccuracyUnion.area  + totalGeometryaccuracyDiff.area )
 index
 
 # use descartes to create the matplotlib patches
+import descartes
 ax = plt.gca()
 ax.add_patch(descartes.PolygonPatch(totalGeometryaccuracyUnion, fc='GREEN', ec='GREEN', alpha=0.5))
 ax.add_patch(descartes.PolygonPatch(totalGeometryaccuracyDiff, fc='RED', ec='RED', alpha=0.5))
@@ -428,15 +423,3 @@ r['scores']
 
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
-
-## Tunning parameters with cross-validation
-## https://towardsdatascience.com/3-ways-to-tune-hyperparameters-of-machine-learning-models-with-python-cda64b62e0ac
-
-image_ids = np.random.choice(dataset_val.image_ids, 10)
-APs = []
-for image_id in image_ids:
-    # Load image and ground truth data
-    index =
-    APs.append(index)
-
-print("mAP: ", np.mean(APs))

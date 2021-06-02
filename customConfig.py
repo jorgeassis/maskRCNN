@@ -36,12 +36,18 @@ class mainConfig(Config):
     # Validation stats are also calculated at each epoch end and they
     # might take a while, so don't set this too small to avoid spending
     # a lot of time on validation stats.
-    STEPS_PER_EPOCH = 1 # default 100, 6000 as suggested in https://github.com/matterport/Mask_RCNN/issues/514
+    
+    # STEPS_PER_EPOCH = TotalTrainingSamples / TrainingBatchSize (config.BATCH_SIZE)
+    
+    STEPS_PER_EPOCH = 275 # with 274 samples default 100, 6000 as suggested in https://github.com/matterport/Mask_RCNN/issues/514
 
     # Number of validation steps to run at the end of every training epoch.
     # A bigger number improves accuracy of validation stats, but slows
     # down the training.
-    # VALIDATION_STEPS = 5 # !
+    
+    # VALIDATION_STEPS = TotalvalidationSamples / ValidationBatchSize
+
+    VALIDATION_STEPS = 75 # with > 75 samples 
 
     # Backbone network architecture
     # Supported values are: resnet50, resnet101.
@@ -56,7 +62,7 @@ class mainConfig(Config):
     # COMPUTE_BACKBONE_SHAPE = None
 
     # The strides of each layer of the FPN Pyramid. These values
-    # are based on a Resnet101 backbone.
+    # are based on a Resnet101 backbone.S
     # BACKBONE_STRIDES = [4, 8, 16, 32, 64]
 
     # Size of the fully-connected layers in the classification graph
