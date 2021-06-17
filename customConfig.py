@@ -4,7 +4,7 @@ Base Configurations class.
 
 """
 
-# Details: https://github.com/matterport/Mask_RCNN/blob/master/mrcnn/config.py
+# Details: https://github.com/matterport/Mask_RCNN/blob/master/mrcnn/config.py 
 
 class mainConfig(Config):
   
@@ -39,7 +39,7 @@ class mainConfig(Config):
     
     # STEPS_PER_EPOCH = TotalTrainingSamples / TrainingBatchSize (config.BATCH_SIZE)
     
-    STEPS_PER_EPOCH = 275 # with 274 samples default 100, 6000 as suggested in https://github.com/matterport/Mask_RCNN/issues/514
+    STEPS_PER_EPOCH = 315 # with 274 samples default 100, 6000 as suggested in https://github.com/matterport/Mask_RCNN/issues/514
 
     # Number of validation steps to run at the end of every training epoch.
     # A bigger number improves accuracy of validation stats, but slows
@@ -72,7 +72,9 @@ class mainConfig(Config):
     # TOP_DOWN_PYRAMID_SIZE = 256
 
     # Length of square anchor side in pixels
-    # RPN_ANCHOR_SCALES = (32, 64, 128, 256, 512)
+
+    # RPN_ANCHOR_SCALES = (32, 64, 128, 256, 512) # J01 J02 J04
+    # RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256) # J03
 
     # Ratios of anchors at each cell (width/height)
     # A value of 1 represents a square anchor, and 0.5 is a wide anchor
@@ -183,7 +185,8 @@ class mainConfig(Config):
     # weights to explode. Likely due to differences in optimizer
     # implementation.
     
-    LEARNING_RATE = 0.001
+    #LEARNING_RATE = 0.01 # J01-3
+    LEARNING_RATE = 0.001 # J04
     
     # LEARNING_MOMENTUM = 0.9
 

@@ -1,17 +1,7 @@
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
-## CHAGE LOG
-##
-## Implement the Use of GPU
-## https://github.com/matterport/Mask_RCNN/issues/1360
-##
-## ------------------------------------------------------------------------
-## ------------------------------------------------------------------------
 ##
 ##
-
-# Experiments
-# https://docs.google.com/spreadsheets/d/1ZvXmKZ_F-i7OREvv4-kAcxZ8kDTMGu02FK69lyLOokk/edit?ts=60b613b1#gid=0
 
 # ~/opt/anaconda3/envs/mrcnn/bin/python
 # /home/jorgeassis/miniconda3/envs/mrcnn/bin/python
@@ -26,6 +16,7 @@ del element
 
 ## Packages and main configuration
 
+from customDatasetClass import CustomDataset2
 import os
 import glob
 
@@ -60,6 +51,8 @@ from keras.preprocessing.image import load_img
 from keras.preprocessing.image import img_to_array
 
 from pandas import DataFrame
+from pandas import concat
+import pandas as pd
 
 os.getcwd()
 
@@ -70,7 +63,7 @@ rootDirectory = os.path.abspath("/media/Bathyscaphe/Mask RCNN for Kelp Detection
 sys.path.append(rootDirectory)  # To find local version of the library
 
 ## Directory to save logs and trained model
-modelDirectory = os.path.join("../../", "logs")
+modelDirectory = os.path.join("../../", "Experiments/J04")
 
 ## Dataset Directory
 
@@ -105,9 +98,9 @@ dataset_train = CustomDataset()
 dataset_train.load_custom(args.dataset, "train")
 dataset_train.prepare()
 
-# Validation dataset
+# Test dataset
 dataset_val = CustomDataset()
-dataset_val.load_custom(args.dataset, "val")
+dataset_val.load_custom(args.dataset, "test")
 dataset_val.prepare()
 
 ## ------------------------------------------------------------------------
@@ -138,10 +131,6 @@ utils.download_trained_weights(weightsFilePath)
 # 1. Only the heads. Here we're freezing all the backbone layers and training only the randomly initialized layers (i.e. the ones that we didn't use pre-trained weights from MS COCO). To train only the head layers, pass `layers='heads'` to the `train()` function.
 # 2. Fine-tune all layers. For this simple example it's not necessary, but we're including it to show the process. Simply pass `layers="all` to train all layers.
 
-
-# Try changing this
-# config.DETECTION_MIN_CONFIDENCE = 0.25
-
 model = modellib.MaskRCNN(mode="training", config=config, model_dir=modelDirectory)
 
 model.load_weights(weightsFilePath, by_name=True, exclude=[
@@ -152,44 +141,47 @@ model.load_weights(weightsFilePath, by_name=True, exclude=[
 
 start = time.time()
 
-config.LEARNING_RATE = 0.01
 config.N_EPOCHS = 10
+
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
             epochs=config.N_EPOCHS,
             layers='heads' )
 
-end = time.time()
-
-print(f"Runtime of the program is {(end - start) / 60} minutes")
-
 # Save loss to file
 
 history = model.keras_model.history.history
 historyDF = DataFrame(history)
-print(historyDF)
-historyDF.to_csv('../../Experiments/historyExperimentHeads.csv', index = False, header=True)
+historyDF.to_csv(modelDirectory + '/historyExperimentHeads.csv', index = False, header=True)
 
 ## Model all layers
 
 from imgaug import augmenters as iaa
 augmentationSeq = [iaa.Fliplr(0.5), iaa.Flipud(0.5), iaa.Affine(rotate=(0, 360)), iaa.Multiply((0.5, 1.5)) ] #iaa.Affine(scale=(0.5, 1.5)),
      
-config.LEARNING_RATE = 0.001
-config.N_EPOCHS = 100 
+config.N_EPOCHS = 50 # 100 final version
+
 model.train(dataset_train, dataset_val,
-            learning_rate=config.LEARNING_RATE,
+            learning_rate=config.LEARNING_RATE / 10,
             epochs=config.N_EPOCHS,
-            layers='all') # , augmentation = iaa.Sequential(augmentationSeq))
+            layers='all', augmentation = iaa.Sequential(augmentationSeq))
             
+end = time.time()
+print(f"Runtime of the program is {(end - start) / 60} minutes")
+
+## ------------------
+
 new_history = model.keras_model.history.history
-for k in new_history: history[k] = history[k] + new_history[k]
+for k in new_history: 
+    history[k] = history[k] + new_history[k]
 
 historyDF = DataFrame(history)
-print(historyDF)
-historyDF.to_csv('historyExperimentAll.csv', index = False, header=True)
+historyDF.to_csv(modelDirectory + '/historyExperimentAll.csv', index = False, header=True)
 
 # Plot loss
+
+plt.close()
+plt.close(f)
 
 epochs = range(model.epoch)
 f = plt.figure(figsize=(18, 6))
@@ -225,19 +217,28 @@ plt.legend(loc = "upper left")
 plt.legend()
 
 plt.show()
-f.savefig("../../Experiments/foo.pdf", bbox_inches='tight')
+f.savefig(modelDirectory + '/lossPlot.pdf', bbox_inches='tight')
+plt.close()
+plt.close(f)
 
 ## ------------------------
 ##
-## tensorboard --logdir logs/
+## conda activate mrcnn
+## tensorboard --logdir logs/ # Logs is the folder where the experiments are 
+## http://10.36.5.144:6006/
 ##
 ## ------------------------
 
 # Get best epoch
 
-best_epoch = np.argmin(history["val_loss"]) + 1
-print("Best epoch: ", best_epoch)
-print("Valid loss: ", history["val_loss"][best_epoch-1])
+best_epoch = np.argmin(history["val_loss"])
+print("Best epoch: ", best_epoch + 1)
+print("Valid loss: ", history["val_loss"][best_epoch])
+
+lossResultsBestEpoch = DataFrame(history)
+df2 = DataFrame([best_epoch + 1], index=["Best epoch"])
+df3 = lossResultsBestEpoch.loc[best_epoch]
+pd.concat([df2, df3]).to_csv(modelDirectory + '/lossesBestEpoch.csv', index = True, header=False)
 
 ## ------------------------
 
@@ -250,6 +251,13 @@ print("Valid loss: ", history["val_loss"][best_epoch-1])
 ## ------------------------------------------------------------------------
 
 ## Detection
+
+# Load validation dataset
+dataset_independent = CustomDataset2()
+dataset_independent.load_custom(args.dataset, "val")
+dataset_independent.prepare()
+
+## -----------------
 
 class InferenceConfig(mainConfig):
     GPU_COUNT = 1
@@ -269,157 +277,128 @@ model = modellib.MaskRCNN(mode="inference",
 
 # Load from external file 
 
-weightsFilePathFinal = '/media/Bathyscaphe/Mask RCNN for Kelp Detection/logs/kelp20210528T1202/mask_rcnn_kelp_0028.h5'
+# weightsFilePathFinal = '/media/Bathyscaphe/Mask RCNN for Kelp Detection/logs/kelp20210528T1202/mask_rcnn_kelp_0028.h5'
 
 # Get path of last saved weights
 
-files = glob.glob("../../logs/" + '/**/*.h5', recursive=True)
+files = glob.glob(modelDirectory + '/**/*.h5', recursive=True)
 filesCreatingTime = []
 
 for i in range(len(files)):
-    filesCreatingTime.append(os.stat(glob.glob("../../logs/" + '/**/*.h5', recursive=True)[i])[1])
+    filesCreatingTime.append(os.stat(glob.glob(modelDirectory + '/**/*.h5', recursive=True)[i])[1])
 
 # Get the last
+
 weightsFilePathFinal = files[files.index(max(files))]
 
-# Chose from best_epoch
+# Chose from best_epoch ****
+ 
+weightsFilePathFinal = glob.glob(modelDirectory + '/**/*' + str(best_epoch) + '.h5', recursive=True)[0]
 
-# weightsFilePathFinal = files[2] # Needs to be corrected
+## --------------------------
 
 # Load trained weights
 
 model.load_weights(weightsFilePathFinal, by_name=True)
 
-## --------------------------
-## --------------------------
-# Test on a val image
-
-image_id = random.choice(dataset_val.image_ids)
-image_id = 52
-
-original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
-    modellib.load_image_gt(dataset_val, inferenceConfig, image_id, use_mini_mask=False)
-
-log("original_image", original_image)
-log("image_meta", image_meta)
-log("gt_class_id", gt_class_id)
-log("gt_bbox", gt_bboSx)
-log("gt_mask", gt_mask)
-
-visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id, dataset_train.class_names, figsize=(8, 8))
-
-# Detect
-
-results = model.detect([original_image], verbose=1)
-
-r = results[0]
-print(r.keys())
-visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],
-                            dataset_val.class_names, r['scores'], figsize=(8, 8))
-
-# Regions identified xmin, ymin, xmax and ymax
-r['rois']
-
-# Number of identifyed features
-len(r['class_ids'])
-
-# Scores of each feature
-r['scores']
-
-# Determine total area (fraction of image)
-
-imageArea = 1 # Change to actual image
-totalArea = []
-for i in range(r['masks'].shape[-1]):
-    mask = r['masks'][:, :, i]
-    positive_pixel_count = mask.sum() # assumes binary mask (True == 1)
-    h, w = mask.shape # assumes NHWC data format, adapt as needed
-    area = positive_pixel_count / (w*h)
-    totalArea.append(area)
-
-sum(totalArea)
-sum(totalArea) * imageArea
-
-totalGeometry = []
-for i in range(r['masks'].shape[-1]):
-    polygons = Mask(r['masks'][:, :, i]).polygons()
-    polygons = polygons.points[:][0]
-    polygonF = Polygon(polygons)
-    totalGeometry.append(polygonF)
-
-totalGeometryPredicted = cascaded_union(totalGeometry)
-
-boundaryP = gpd.GeoSeries(totalGeometryPredicted)
-boundaryP.plot(color = 'red')
-plt.show()
-
-# Actual observed mask
-
-totalGeometry = []
-for i in range(gt_mask.shape[-1]):
-    polygons = Mask(gt_mask[:, :, i]).polygons()
-    polygons = polygons.points[:][0]
-    polygonF = Polygon(polygons)
-    totalGeometry.append(polygonF)
-
-totalGeometryObserved = cascaded_union(totalGeometry)
-
-boundaryO = gpd.GeoSeries(totalGeometryPredicted)
-boundaryO.plot(color = 'green')
-plt.show()
-
-totalGeometryaccuracyUnion = totalGeometryObserved.intersection(totalGeometryPredicted)
-totalGeometryaccuracyDiff = totalGeometryObserved.difference(totalGeometryPredicted)
-
-totalGeometryObserved.area
-totalGeometryPredicted.area
-totalGeometryaccuracyUnion.area
-totalGeometryaccuracyDiff.area
-
-# Accuracy indexes
-# https://towardsdatascience.com/how-accurate-is-image-segmentation-dd448f896388
-
-# Jaccard’s Index (Intersection over Union, IoU)
-
-index = totalGeometryaccuracyUnion.area / ( totalGeometryaccuracyUnion.area  + totalGeometryaccuracyDiff.area )
-index
-
-# Dice Coefficient
-
-index = 2 * totalGeometryaccuracyUnion.area / ( totalGeometryaccuracyUnion.area  + totalGeometryaccuracyUnion.area  + totalGeometryaccuracyDiff.area )
-index
-
-# use descartes to create the matplotlib patches
-import descartes
-ax = plt.gca()
-ax.add_patch(descartes.PolygonPatch(totalGeometryaccuracyUnion, fc='GREEN', ec='GREEN', alpha=0.5))
-ax.add_patch(descartes.PolygonPatch(totalGeometryaccuracyDiff, fc='RED', ec='RED', alpha=0.5))
-
-# control display
-ax.set_xlim(0, 800); ax.set_ylim(0, 800)
-ax.set_aspect('equal')
-plt.show()
-
-## --------------------------
-## --------------------------
-# Test on a external image
-
-externalImagePath = "../../Data/Dataset 3/train/LC08_040037_20140914_27.jpg"
-
-# display image
-
-plt.clf()
-img = mpimg.imread(externalImagePath)
-imgplot = plt.imshow(img)
-plt.show()
-
-img = load_img(externalImagePath)
-img = img_to_array(img)
-results = model.detect([img], verbose=1)
-r = results[0]
-visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'], dataset_val.class_names, r['scores'], figsize=(8, 8))
-
-r['scores']
-
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
+
+## Loop to get accuracy values for different threholds of confidence
+
+resultsDFThreshold = []
+
+for threshold in np.arange(0, 1, 0.1): 
+
+    inferenceConfig.DETECTION_MIN_CONFIDENCE = round(threshold, 2)
+    
+    model = modellib.MaskRCNN(mode="inference",
+                            config=inferenceConfig,
+                            model_dir=modelDirectory)
+                                                
+    model.load_weights(weightsFilePathFinal, by_name=True)
+
+    resultsDF = []
+    numberValImages = len(glob.glob(datasetDirectory + '/val/*.jpg', recursive=True))
+
+    for image_id in range(numberValImages):
+
+        original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
+            modellib.load_image_gt(dataset_independent, inferenceConfig, image_id, use_mini_mask=False)
+
+        # Detect
+
+        results = model.detect([original_image], verbose=1)
+        r = results[0]
+
+        totalGeometry = []
+        for i in range(r['masks'].shape[-1]):
+            polygons = Mask(r['masks'][:, :, i]).polygons()
+            polygons = polygons.points[:][0]
+            if len(polygons) <= 2:
+                continue
+            polygonF = Polygon(polygons)
+            totalGeometry.append(polygonF)
+
+        totalGeometryPredicted = cascaded_union(totalGeometry)
+
+        boundaryP = gpd.GeoSeries(totalGeometryPredicted)
+        # boundaryP.plot(color = 'red')
+        # plt.show()
+
+        totalGeometry = []
+        for i in range(gt_mask.shape[-1]):
+            polygons = Mask(gt_mask[:, :, i]).polygons()
+            polygons = polygons.points[:][0]
+            if len(polygons) <= 2:
+                continue
+            polygonF = Polygon(polygons)
+            totalGeometry.append(polygonF)
+
+        totalGeometryObserved = cascaded_union(totalGeometry)
+
+        boundaryO = gpd.GeoSeries(totalGeometryObserved)
+        # boundaryO.plot(color = 'green')
+        # plt.show()
+
+        totalGeometryPredicted = totalGeometryPredicted.buffer(0)
+        totalGeometryObserved = totalGeometryObserved.buffer(0)
+
+        totalGeometryaccuracyIntersect = totalGeometryObserved.intersection(totalGeometryPredicted)
+        totalGeometryaccuracyDiff = totalGeometryObserved.difference(totalGeometryPredicted)
+
+        indexJaccard = totalGeometryaccuracyIntersect.area / ( totalGeometryaccuracyIntersect.area  + totalGeometryaccuracyDiff.area )
+        indexDice = 2 * totalGeometryaccuracyIntersect.area / ( totalGeometryaccuracyIntersect.area  + totalGeometryaccuracyIntersect.area  + totalGeometryaccuracyDiff.area )
+
+        resultsDF.append(
+            {
+                'Image': image_id,
+                'indexJaccard': indexJaccard,
+                'indexDice': indexDice,
+                'areaObserved':  totalGeometryObserved.area,
+                'areaPredicted':  totalGeometryPredicted.area,
+                'areaIntersect':  totalGeometryaccuracyIntersect.area,
+                'areaDifference':  totalGeometryaccuracyDiff.area,
+            }
+        )
+
+    resultsDF = DataFrame(resultsDF)
+    resultsDF.to_csv(modelDirectory + '/accuracyRaw_' + str(round(threshold, 2)) + '.csv', index = False, header=True)
+
+    resultsDFAverage = pd.concat([resultsDF.mean(axis=0), resultsDF.mean(axis=0)],axis=1, keys=['Mean', 'Stdv'])
+    resultsDFAverage.drop(labels='Image',axis=0).to_csv(modelDirectory + '/accuracyAverage_' + str(round(threshold, 2)) + '.csv', index = True, header=True)
+
+    resultsDFThreshold.append(
+            {
+                'Threshold': threshold,
+                'indexJaccard': list(resultsDFAverage['Mean'])[1],
+                'indexDice': list(resultsDFAverage['Mean'])[2],
+                'areaObserved':  list(resultsDFAverage['Mean'])[3],
+                'areaPredicted':  list(resultsDFAverage['Mean'])[4],
+                'areaIntersect':  list(resultsDFAverage['Mean'])[5],
+                'areaDifference':  list(resultsDFAverage['Mean'])[6],
+            }
+    )
+
+resultsDFThreshold = DataFrame(resultsDFThreshold)
+resultsDFThreshold.to_csv(modelDirectory + '/accuracyThresholdTest.csv', index = False, header=True)
