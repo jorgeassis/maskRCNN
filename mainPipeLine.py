@@ -121,7 +121,6 @@ for image_id in dataset_val.image_ids:
     
 ## ------------------------------------------------------------------------
 ## ------------------------------------------------------------------------
-
 ## Train model
 
 ## Download COCO trained weights from Releases if needed
@@ -292,7 +291,7 @@ for i in range(len(files)):
 weightsFilePathFinal = files[files.index(max(files))]
 
 # Chose from best_epoch ****
- 
+# best_epoch = 37-1 
 weightsFilePathFinal = glob.glob(modelDirectory + '/**/*' + str(best_epoch) + '.h5', recursive=True)[0]
 
 ## --------------------------
@@ -385,12 +384,12 @@ for threshold in np.arange(0, 1, 0.1):
     resultsDF = DataFrame(resultsDF)
     resultsDF.to_csv(modelDirectory + '/accuracyRaw_' + str(round(threshold, 2)) + '.csv', index = False, header=True)
 
-    resultsDFAverage = pd.concat([resultsDF.mean(axis=0), resultsDF.mean(axis=0)],axis=1, keys=['Mean', 'Stdv'])
+    resultsDFAverage = pd.concat([resultsDF.mean(axis=0), resultsDF.std(axis=0)],axis=1, keys=['Mean', 'Stdv'])
     resultsDFAverage.drop(labels='Image',axis=0).to_csv(modelDirectory + '/accuracyAverage_' + str(round(threshold, 2)) + '.csv', index = True, header=True)
 
     resultsDFThreshold.append(
             {
-                'Threshold': threshold,
+                'Threshold': round(threshold, 2),
                 'indexJaccard': list(resultsDFAverage['Mean'])[1],
                 'indexDice': list(resultsDFAverage['Mean'])[2],
                 'areaObserved':  list(resultsDFAverage['Mean'])[3],

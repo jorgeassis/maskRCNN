@@ -72,11 +72,7 @@ config.display()
 
 ## --------------------------------------------------------------------------
 ## --------------------------------------------------------------------------
-# Test accuracy on validation dataset images
-
-datasetDirectory = "/media/Bathyscaphe/Mask RCNN for Kelp Detection/Annotations Data/Final Data/" # datasetDirectory = "Data/kelpPatches/"
-
-exec(open('customDatasetClass.py').read())
+# Reproduce the model
 
 parser = argparse.ArgumentParser(description='Train Mask R-CNN to detect custom class.')
 
@@ -86,11 +82,6 @@ parser.add_argument('--dataset', required=False,
                     help='Directory of the custom dataset')
 
 args = parser.parse_args()
-
-# Load validation dataset
-dataset_independent = CustomDataset2()
-dataset_independent.load_custom(args.dataset, "val")
-dataset_independent.prepare()
 
 class InferenceConfig(mainConfig):
     GPU_COUNT = 1
@@ -102,7 +93,7 @@ inferenceConfig = InferenceConfig()
 
 inferenceConfig.display()
 inferenceConfig.DETECTION_MIN_CONFIDENCE = 0.5
-inferenceConfig.DETECTION_NMS_THRESHOLD = 0.9
+inferenceConfig.DETECTION_NMS_THRESHOLD = 0.5 # 0.9 in model fitting
 inferenceConfig.DETECTION_MAX_INSTANCES = 1000
 
 model = modellib.MaskRCNN(mode="inference",
@@ -124,36 +115,55 @@ weightsFilePathFinal = glob.glob(modelDirectory + '/**/*' + str(best_epoch) + '.
 
 model.load_weights(weightsFilePathFinal, by_name=True)
 
-## --------------------------
+## --------------------------------------------------------------------------
+## --------------------------------------------------------------------------
+# Detect on validation dataset images
+
+exec(open('customDatasetClass.py').read())
+
+parser = argparse.ArgumentParser(description='Train Mask R-CNN to detect custom class.')
+
+parser.add_argument('--dataset', required=False,
+                    metavar=datasetDirectory,
+                    default=datasetDirectory,
+                    help='Directory of the custom dataset')
+
+args = parser.parse_args()
+
+datasetDirectory = "/media/Bathyscaphe/Mask RCNN for Kelp Detection/Annotations Data/Final Data/" # datasetDirectory = "Data/kelpPatches/"
+
+# Load validation dataset
+dataset_independent = CustomDataset2()
+dataset_independent.load_custom(args.dataset, "val")
+dataset_independent.prepare()
 
 # Detect for an image of the val dataset
 
-image_id = 1
+image_id = 1 # 1 6 7 9
 
 original_image, image_meta, gt_class_id, gt_bbox, gt_mask =\
     modellib.load_image_gt(dataset_independent, inferenceConfig, image_id, use_mini_mask=False)
 
-log("original_image", original_image)
-log("image_meta", image_meta)
-log("gt_class_id", gt_class_id)
-log("gt_bbox", gt_bboSx)
-log("gt_mask", gt_mask)
+# dataset_independent.class_names
+visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id,['BG', ''], figsize=(12,12), title="Mask RCNN Kelp Annotation", captions=None, scores=None)
 
-visualize.display_instances(original_image, gt_bbox, gt_mask, gt_class_id, dataset_independent.class_names, figsize=(8, 8))
+results = model.detect([original_image], verbose=1)
+r = results[0]
+visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],['BG', ''], figsize=(12,12), title="Mask RCNN Kelp Detection", captions=None, scores=None)
 
-# Detect for an external image
+## --------------------------------------------------------------------------
+## --------------------------------------------------------------------------
+# Detect on external image
 
-imagePath = "/media/Bathyscaphe/Mask RCNN for Kelp Detection/Raw Data/Landsat5 (2003-2013)/LT05_043035_20090905.jpg"
+imagePath = "/media/Bathyscaphe/Mask RCNN for Kelp Detection/Annotations Data/Final Data/val/LC08_037041_20180515_11.jpg"
 original_image = load_img(imagePath)
 original_image = img_to_array(original_image)
-
-## --------------------------
 
 results = model.detect([original_image], verbose=1)
 
 r = results[0]
 print(r.keys())
-visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'],dataset_independent.class_names, r['scores'], figsize=(8, 8))
+visualize.display_instances(original_image, r['rois'], r['masks'], r['class_ids'], ['BG', ''], r['scores'], figsize=(8, 8))
 
 # Regions identified xmin, ymin, xmax and ymax
 r['rois']
@@ -165,20 +175,9 @@ len(r['class_ids'])
 r['scores']
 
 # ----------------------------------------------------
+# ----------------------------------------------------
 
 # Determine total area (fraction of image)
-
-imageArea = 1 # Change to actual image
-totalArea = []
-for i in range(r['masks'].shape[-1]):
-    mask = r['masks'][:, :, i]
-    positive_pixel_count = mask.sum() # assumes binary mask (True == 1)
-    h, w = mask.shape # assumes NHWC data format, adapt as needed
-    area = positive_pixel_count / (w*h)
-    totalArea.append(area)
-
-sum(totalArea)
-sum(totalArea) * imageArea
 
 totalGeometry = []
 for i in range(r['masks'].shape[-1]):
@@ -192,6 +191,14 @@ totalGeometryPredicted = cascaded_union(totalGeometry)
 boundaryP = gpd.GeoSeries(totalGeometryPredicted)
 boundaryP.plot(color = 'red')
 plt.show()
+plt.close()
+
+# To shapefile
+# use the geature loop in case you polygon is a multipolygon
+features = [i for i in range(len(totalGeometryPredicted))]
+# add crs using wkt or EPSG to have a .prj file
+gdr = gpd.GeoDataFrame({'feature': features, 'geometry': totalGeometryPredicted}) #, crs='EPSG:4326)
+gdr.to_file("Poly.shp")
 
 # Actual observed mask
 
@@ -207,6 +214,7 @@ totalGeometryObserved = cascaded_union(totalGeometry)
 boundaryO = gpd.GeoSeries(totalGeometryObserved)
 boundaryO.plot(color = 'green')
 plt.show()
+plt.close()
 
 # ----------------------------------------------------
 
@@ -249,8 +257,11 @@ plt.show()
 ## -----------------------------------------------------------------------
 ## Detect for a loop
 
-externalImagePath = "/media/Bathyscaphe/Mask RCNN for Kelp Detection/Annotations Data/Final Data/val/"
-externalImageFiles = glob.glob(externalImagePath + '**042036' + '**.jpg')
+externalImagePath = "/media/Bathyscaphe/Mask RCNN for Kelp Detection/TimeSeriesData/Landsat_037041_Tiles/"
+externalImageFiles = glob.glob(externalImagePath + '**.jpg')
+tiles = ['_3.','_4.', '_11.', '_19.']
+
+externalImageFiles = [i for i in externalImageFiles if any(b in i for b in tiles)]
 externalImageFiles
 
 resultsArea = []
@@ -270,19 +281,29 @@ for i in range(len(externalImageFiles)):
     # visualize.display_instances(img, r['rois'], r['masks'], r['class_ids'],dataset_independent.class_names, r['scores'], figsize=(8, 8))
 
     imageArea = 1 # Change to actual image
-    totalArea = []
+
+    totalGeometry = []
     for i in range(r['masks'].shape[-1]):
-        mask = r['masks'][:, :, i]
-        positive_pixel_count = mask.sum() # assumes binary mask (True == 1)
-        h, w = mask.shape # assumes NHWC data format, adapt as needed
-        area = positive_pixel_count / (w*h)
-        totalArea.append(area)
+        polygons = Mask(r['masks'][:, :, i]).polygons()
+        polygons = polygons.points[:][0]
+        if len(polygons) <= 2:
+            continue
+        polygonF = Polygon(polygons)
+        totalGeometry.append(polygonF)
+
+    totalGeometryPredicted = cascaded_union(totalGeometry)
+
+    if str(type(totalGeometryPredicted)) == "<class 'shapely.geometry.polygon.Polygon'>":
+        nPatches = 1
+
+    if str(type(totalGeometryPredicted)) != "<class 'shapely.geometry.polygon.Polygon'>":
+        nPatches = len(totalGeometryPredicted)
 
     resultsArea.append(
         {
             'Image': imageName,
-            'Pathes': len(totalArea),
-            'Area': sum(totalArea * imageArea),
+            'Detections': nPatches,
+            'Area': totalGeometryPredicted.area * imageArea,
         }
     )
 
