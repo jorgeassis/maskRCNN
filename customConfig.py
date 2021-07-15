@@ -4,7 +4,7 @@ Base Configurations class.
 
 """
 
-# Details: https://github.com/matterport/Mask_RCNN/blob/master/mrcnn/config.py 
+# Details: https://github.com/matterport/Mask_RCNN/blob/master/mrcnn/config.py
 
 class mainConfig(Config):
   
@@ -73,8 +73,12 @@ class mainConfig(Config):
 
     # Length of square anchor side in pixels
 
-    # RPN_ANCHOR_SCALES = (32, 64, 128, 256, 512) # J01 J02 J04
-    # RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256) # J03
+    # RPN_ANCHOR_SCALES = (32, 64, 128, 256, 512) # J01 J02 J04 
+    RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256) # J03 J05 J06
+
+    
+    #LEARNING_RATE = 0.01 # J01 2 3 5
+    LEARNING_RATE = 0.001 # J04 J06
 
     # Ratios of anchors at each cell (width/height)
     # A value of 1 represents a square anchor, and 0.5 is a wide anchor
@@ -184,9 +188,6 @@ class mainConfig(Config):
     # The Mask RCNN paper uses lr=0.02, but on TensorFlow it causes
     # weights to explode. Likely due to differences in optimizer
     # implementation.
-    
-    #LEARNING_RATE = 0.01 # J01-3
-    LEARNING_RATE = 0.001 # J04
     
     # LEARNING_MOMENTUM = 0.9
 

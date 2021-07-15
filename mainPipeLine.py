@@ -63,7 +63,7 @@ rootDirectory = os.path.abspath("/media/Bathyscaphe/Mask RCNN for Kelp Detection
 sys.path.append(rootDirectory)  # To find local version of the library
 
 ## Directory to save logs and trained model
-modelDirectory = os.path.join("../../", "Experiments/J04")
+modelDirectory = os.path.join("../../", "Experiments/J05")
 
 ## Dataset Directory
 
@@ -163,7 +163,7 @@ config.N_EPOCHS = 50 # 100 final version
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE / 10,
             epochs=config.N_EPOCHS,
-            layers='all', augmentation = iaa.Sequential(augmentationSeq))
+            layers='all') #, augmentation = iaa.Sequential(augmentationSeq))
             
 end = time.time()
 print(f"Runtime of the program is {(end - start) / 60} minutes")
@@ -331,7 +331,10 @@ for threshold in np.arange(0, 1, 0.1):
         r = results[0]
 
         totalGeometry = []
+
         for i in range(r['masks'].shape[-1]):
+            if sum(Mask(r['masks'][:, :, i])).sum() == 0:
+                continue
             polygons = Mask(r['masks'][:, :, i]).polygons()
             polygons = polygons.points[:][0]
             if len(polygons) <= 2:
@@ -342,10 +345,12 @@ for threshold in np.arange(0, 1, 0.1):
         totalGeometryPredicted = cascaded_union(totalGeometry)
 
         boundaryP = gpd.GeoSeries(totalGeometryPredicted)
+
         # boundaryP.plot(color = 'red')
         # plt.show()
 
         totalGeometry = []
+
         for i in range(gt_mask.shape[-1]):
             polygons = Mask(gt_mask[:, :, i]).polygons()
             polygons = polygons.points[:][0]
@@ -378,8 +383,7 @@ for threshold in np.arange(0, 1, 0.1):
                 'areaPredicted':  totalGeometryPredicted.area,
                 'areaIntersect':  totalGeometryaccuracyIntersect.area,
                 'areaDifference':  totalGeometryaccuracyDiff.area,
-            }
-        )
+            } )
 
     resultsDF = DataFrame(resultsDF)
     resultsDF.to_csv(modelDirectory + '/accuracyRaw_' + str(round(threshold, 2)) + '.csv', index = False, header=True)
@@ -387,17 +391,13 @@ for threshold in np.arange(0, 1, 0.1):
     resultsDFAverage = pd.concat([resultsDF.mean(axis=0), resultsDF.std(axis=0)],axis=1, keys=['Mean', 'Stdv'])
     resultsDFAverage.drop(labels='Image',axis=0).to_csv(modelDirectory + '/accuracyAverage_' + str(round(threshold, 2)) + '.csv', index = True, header=True)
 
-    resultsDFThreshold.append(
-            {
-                'Threshold': round(threshold, 2),
-                'indexJaccard': list(resultsDFAverage['Mean'])[1],
-                'indexDice': list(resultsDFAverage['Mean'])[2],
-                'areaObserved':  list(resultsDFAverage['Mean'])[3],
-                'areaPredicted':  list(resultsDFAverage['Mean'])[4],
-                'areaIntersect':  list(resultsDFAverage['Mean'])[5],
-                'areaDifference':  list(resultsDFAverage['Mean'])[6],
-            }
-    )
+    resultsDFThreshold.append({ 'Threshold': round(threshold, 2),
+    'indexJaccard': list(resultsDFAverage['Mean'])[1],
+    'indexDice': list(resultsDFAverage['Mean'])[2],
+    'areaObserved':  list(resultsDFAverage['Mean'])[3],
+    'areaPredicted':  list(resultsDFAverage['Mean'])[4],
+    'areaIntersect':  list(resultsDFAverage['Mean'])[5],
+    'areaDifference':  list(resultsDFAverage['Mean'])[6] } )
 
 resultsDFThreshold = DataFrame(resultsDFThreshold)
 resultsDFThreshold.to_csv(modelDirectory + '/accuracyThresholdTest.csv', index = False, header=True)
