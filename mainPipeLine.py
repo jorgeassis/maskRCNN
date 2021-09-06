@@ -63,7 +63,7 @@ rootDirectory = os.path.abspath("/media/Bathyscaphe/Mask RCNN for Kelp Detection
 sys.path.append(rootDirectory)  # To find local version of the library
 
 ## Directory to save logs and trained model
-modelDirectory = os.path.join("../../", "Experiments/J05")
+modelDirectory = os.path.join("../../", "Experiments/J06")
 
 ## Dataset Directory
 
@@ -163,7 +163,7 @@ config.N_EPOCHS = 50 # 100 final version
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE / 10,
             epochs=config.N_EPOCHS,
-            layers='all') #, augmentation = iaa.Sequential(augmentationSeq))
+            layers='all' )# , augmentation = iaa.Sequential(augmentationSeq))
             
 end = time.time()
 print(f"Runtime of the program is {(end - start) / 60} minutes")

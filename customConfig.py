@@ -73,12 +73,11 @@ class mainConfig(Config):
 
     # Length of square anchor side in pixels
 
-    # RPN_ANCHOR_SCALES = (32, 64, 128, 256, 512) # J01 J02 J04 
+    #RPN_ANCHOR_SCALES = (32, 64, 128, 256, 512) # J01 J02 J04 
     RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256) # J03 J05 J06
 
-    
-    #LEARNING_RATE = 0.01 # J01 2 3 5
-    LEARNING_RATE = 0.001 # J04 J06
+   # LEARNING_RATE = 0.001 # J01 2 3 5
+    LEARNING_RATE = 0.0001 # J04 J06
 
     # Ratios of anchors at each cell (width/height)
     # A value of 1 represents a square anchor, and 0.5 is a wide anchor
