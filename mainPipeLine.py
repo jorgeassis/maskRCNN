@@ -54,6 +54,7 @@ from pandas import DataFrame
 from pandas import concat
 import pandas as pd
 
+os.chdir("/media/Bathyscaphe/Mask RCNN for Kelp Detection/Code/maskRCNN/")
 os.getcwd()
 
 ## Root directory of the project
@@ -63,7 +64,7 @@ rootDirectory = os.path.abspath("/media/Bathyscaphe/Mask RCNN for Kelp Detection
 sys.path.append(rootDirectory)  # To find local version of the library
 
 ## Directory to save logs and trained model
-modelDirectory = os.path.join("../../", "Experiments/J06")
+modelDirectory = os.path.join("../../", "Experiments/J08")
 
 ## Dataset Directory
 
