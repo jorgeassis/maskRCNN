@@ -1,18 +1,8 @@
-# Mask RCNN implementation on a custom dataset.
+# Artificial Intelligence Convolutional Neural Networks maps giant kelp forests from satellite imagery
 
-### Get important information from:
-https://towardsdatascience.com/mask-rcnn-implementation-on-a-custom-dataset-fd9a878123d4
+### Team
+Marquez, L.; Fragkopoulou, E.; Serrão, E.A.; Cavanaugh, K.; Houskeeper, H.; E.; Assis, J.
 
-https://towardsdatascience.com/climate-forecasting-with-deep-learning-and-keras-ba75f72e9672
+### Abstract
+Ongoing climate change is producing shifts in the distribution and abundance of numerous marine species. Such is the case of marine forests of large brown algae, important ecosystem-structuring species whose low latitude distributional ranges have been shifting across the world. Synthesizing robust time series with long-term observations of these species is therefore vital to understand the drivers shaping ecosystem dynamics and predict responses to ongoing and future climate changes. Here we demonstrate the use of Mask Regional-Convolutional Neural Networks (MRCNN) developed with Keras and TensorFlow to automatically assimilate data from open-source satellite imagery (Landsat Thematic Mapper) and predict potential regions with marine forests. The analyses focused on the giant kelp Macrocystis pirifera along the shorelines of southern California in the northeastern Pacific, where the MRCNN model accurately identified the floating canopies of the species and determined distributional areas through time (from 1984 onwards). The use of this data on explanatory modelling can contribute to a better understanding of ongoing ecosystem dynamics assisting on future projections. Furthermore, this information can be used to improve management plans and identify avenues for future research.
 
-https://towardsdatascience.com/instance-segmentation-with-mask-r-cnn-6e5c4132030b
-
-https://machinelearningmastery.com/how-to-perform-object-detection-in-photographs-with-mask-r-cnn-in-keras/
-
-https://blog.paperspace.com/mask-r-cnn-in-tensorflow-2-0/
-
-https://medium.com/@gabogarza/mask-r-cnn-for-ship-detection-segmentation-a1108b5a083
-
-https://thebinarynotes.com/how-to-train-mask-r-cnn-on-the-custom-dataset/
-
-https://medium.com/analytics-vidhya/taming-the-hyper-parameters-of-mask-rcnn-3742cb3f0e1b
