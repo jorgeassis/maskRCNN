@@ -1,4 +1,4 @@
-# Artificial Intelligence Convolutional Neural Networks maps giant kelp forests from satellite imagery
+## Artificial Intelligence Convolutional Neural Networks maps giant kelp forests from satellite imagery
 
 ### Team
 Marquez, L.; Fragkopoulou, E.; Serrão, E.A.; Cavanaugh, K.; Houskeeper, H.; E.; Assis, J.
