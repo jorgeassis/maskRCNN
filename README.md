@@ -2,7 +2,7 @@
 
 Marquez, L.; Fragkopoulou, E.; Serrão, E.A.; Cavanaugh, K.; Houskeeper, H.; E.; Assis, J.
 
-<hr style="border:1px dashed">
+<hr style="border: 0.5px">
 
 ### Rationale
 Ongoing climate change is producing shifts in the distribution and abundance of numerous marine species. Such is the case of marine forests of large brown algae, important ecosystem-structuring species whose low latitude distributional ranges have been shifting across the world. Synthesizing robust time series with long-term observations of these species is therefore vital to understand the drivers shaping ecosystem dynamics and predict responses to ongoing and future climate changes. 
